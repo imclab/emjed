@@ -1,0 +1,75 @@
+<html>
+<head>
+<script type="text/javascript">
+window.onload = function () {
+  document.getElementById('host').value = location.hostname;
+}
+
+var getURL = (function() {
+  var xhr;
+  if (window.XDomainRequest) {
+    xhr = new XDomainRequest();
+    return function(url, callback) {
+      xhr.onload = function() { callback(xhr.responseText, xhr.contentType) };
+      xhr.open('GET', url);
+      xhr.send();
+    };
+  } else {
+    xhr = new XMLHttpRequest();
+    return function(url, callback) {
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) 
+          callback(xhr.responseText, xhr.getResponseHeader("Content-Type"));
+      };
+      xhr.open('GET', url, true);  
+      xhr.send();
+    };
+  }
+})();
+
+function setText(id, text) {
+  var e = document.getElementById(id);
+  e.appendChild(document.createTextNode(text));
+}
+
+function clear(id) {
+  var e = document.getElementById(id);
+  while (e.hasChildNodes())
+    e.removeChild(e.firstChild);
+}
+
+function onc () {
+  getURL(
+    "http://" + document.getElementById('host').value + ":8080/" +
+    "?cmd=" + document.getElementById('cmd').value +
+    "&key=" + document.getElementById('key').value +
+    (function () {
+      var c = document.getElementById('cmd').value;
+      if (c == "import" || c == "set") {
+        return "&val=" + document.getElementById('val').value;
+      }
+      return "";
+     }
+    )(),
+    function (d) {
+      // var obj = JSON.parse(d);
+      // setText('val', JSON.stringify(obj));
+      clear('ret');
+      setText('ret', d);
+    }
+  );
+}
+
+</script>
+</head>
+<body>
+host: <input id="host" type="text" value="" /><br />
+cmd: <input id="cmd" type="text" value="" /><br />
+key: <input id="key" type="text" value="" /><br />
+val: <br />
+     <textarea id="val" cols="80" rows="24"></textarea><br />
+<input type="button" value="exec" onclick="onc();" /><br />
+ret: <span id="ret"></span>
+
+</body>
+</html>

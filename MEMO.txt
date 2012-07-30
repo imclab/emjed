@@ -1,0 +1,85 @@
+Redis はそのうちなくすつもりで.
+このプログラム自体の起動スクリプトの例.
+三段階の停止, 起動, 再起動, つまり
+  このプログラムが扱っているプログラム
+  このプログラム
+  OS
+
+ログとか.
+
+
+登録されているプログラムのリストと
+実行中のプログラムの一覧を保持しながら進むべき.
+
+future
+  future-done? で終わったか調べる.
+  future-canceled? で停止されたかどうか調べる.
+  future-cancel で停止する.
+
+ロード
+  require したことがあるかどうか調べるのはどうする?
+  require でロードしたものはアンロードできない?
+  ns と load の方にすべき?
+  require や use は :reload つければリロードする.
+  不要になったら remove-ns か.
+  いや (loaded-libs) で調べると remove-ns しても消えない.
+
+カレントディレクトリの取得
+  (.getCanonicalPath (java.io.File. "."))
+
+クラスパスの動的追加
+  (-> (Thread/currentThread)
+    (.getContextClassLoader)
+    (.addURL (java.net.URL. "file:///path/"))) <-最後 / なので注意!
+
+クラスパスの動的削除
+
+コンパイル
+  クラスパスに登録されているディレクトリ相対で
+  hoge/core.clj が存在するとする.
+    中で (ns hoge.core (:gen-class)) してあるとする.
+    (:gen-class) してなくてもコンパイルできるけど?
+    :gen-class は何のために必要?
+  *compile-path* (デフォルトは "classes") に指定されたディレクトリ
+  が存在し且つ, そのディレクトリがクラスパスに登録されているとする.
+  (compile 'hoge.core) で OK!
+  この状態で hoge.core の関数を呼ぶとどっちが使われる?
+  またどっちが使われるかはどうやって決まる?
+
+追加
+  ・/home/admin/hoge/core.clj を作る.
+  ・コンパイル!
+    (require は必要ない)
+
+削除
+  ・(remove-ns 'hoge.core) 相当の実行で
+    GCの削除対象になるか?
+  ソースファイルやコンパイルしたクラスファイルを消すのは?
+
+更新
+  ・/home/admin/hoge/core.clj を更新する.
+  ・コンパイル
+    (require 'hoge.core :reload) は必要ない.
+
+開始
+  ・(future (hoge.core/-main "Foo" "Bar")) 相当を実行する.
+    具体的には
+      (future ((resolve (symbol "hoge.core/-main")) "Foo" "Bar"))
+    する.
+  停止するためにはとっておかないとならない.
+  ループ変数のリストかマップに追加する.
+
+停止
+  future の返り値を f で参照できるとして
+  (future-cancel f)
+  で止まる.
+  f が実行中ならば止めて true を返す.
+  f が停止されているか, 終了していれば false を返す.
+
+状態確認
+  future の返り値を f で参照できるとして
+  (future? f)
+  (future-done? f)
+  (future-canceled? f)
+  で確認する.
+
