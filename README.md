@@ -3,16 +3,16 @@ What is this
 
 Emjed is a program which manages programs for embedded computers.
 Written in Clojure.
-This requires an implementation of JRE 1.6 or higher installed and
+Emjed requires an implementation of JRE 1.6 or higher installed and
 configured on the target computer.
 Emjed runs on a JVM on a target computer and give controls (i.e. installing,
 uninstalling, starting, stopping and updating) of programs on them
 to remote computers via tcp connection.
-Emjed has an on-memory-database for storing the configurations
+Emjed has an on-memory-database for storing the configuration
 for programs and gives interfaces to access the database
 to programs and remote TCP clients
 
-Though emjed supports programgs written in only Clojure initially,
+Though emjed supports programgs written in only Clojure now,
 its frames accepts other languages independent of the fact that
 it is written in Clojure.
 Some programming languages may be supported near future.
@@ -35,8 +35,8 @@ Terms
 LDB:
 
 
-Library API Reference
----------------------
+Library Interface Reference
+---------------------------
 (require '[emjed.ldb :as ldb])
 
 'kv'  is a vector of keywords. such as [:foo :bar]
@@ -61,10 +61,10 @@ ldb/fput path body : body is a byte-array
 ldb/fdel path
 ldb/frename spath dpath
 
-Communication API Reference
+Network Interface Reference
 ---------------------------
 'qk' is a qualified key, ":foo:bar"
-'json' is a valid json expression.
+'json-exp' is a valid json expression.
 
 pwd
 cd path
