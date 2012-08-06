@@ -1,6 +1,7 @@
 (ns emjed.ldb
   (:refer-clojure :exclude (load get set add-classpath))
-  (:import [clojure.lang DynamicClassLoader])
+  (:import [java.util Date]
+           [clojure.lang DynamicClassLoader])
   (:require [cheshire.core :as json])
   (:use [clojure.java.io]
         [clojure.core.incubator :only [dissoc-in]]))
@@ -50,8 +51,8 @@
 
 (defmacro save []
  `(doseq [[m# f#] [[@*conf* @*conf-file*] [@*prog* @*prog-file*]]]
-    (spit (str @*dir* "/" f#))
-      (json/generate-string m# {:pretty true})))
+    (spit (str @*dir* "/" f#)
+      (json/generate-string m# {:pretty true}))))
 
 (defn cd
   ([] (cd @*dir*))

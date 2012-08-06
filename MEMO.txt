@@ -127,14 +127,13 @@ runnings から削除はいつやる?
 ps された時?
 
 先に *prog* がどういう状態にあるべきか考えよう
-{:km20-driver
-  {:type jar ? clj?
-   :version
-   :source "src/air12/drivers/{km20.clj,...}"
-   :execution "AUTO" | "MANUAL"
-   :timing "LOOP" | "ONCE" | "SCHEDULE"
-   :wait <- timing = "LOOP" の場合
-   :schedule < timing = "ONCE" の場合
+{:km20-driver ; <- name as keyword
+  {:name-spaces
+   :main ; あれば
+   :execution  "AUTO" | "MANUAL" ; なければ MANUAL
+   :timing     "ONCE" | "LOOP" |
+               ["****-**-01 *** **:**:**",
+                "****-**-** Wed 01:**:**"]
   }
 
 一回実行

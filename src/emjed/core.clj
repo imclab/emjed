@@ -1,6 +1,5 @@
 (ns emjed.core
   (:gen-class)
-  (:import  [java.util Date])
   (:use     [clojure.java.io]
             [server.socket])
   (:require [emjed.ldb :as ldb]
@@ -14,73 +13,6 @@
   (System/getProperty "emjed.version"))
 
 ;; ----------------------------------------------------------------
-;; programs
-;;
-(def ^:dynamic *runnings* (atom {}))
-
-(defn- p-require [p-main]
-  (require (symbol p-main))
-  "OK")
-
-(defn- p-compile [p-main & p-other-namespaces]
-  ; TODO if p-classes doesn't exist, create it
-  (binding [*compile-path*
-              (.getCanonicalPath (file (str (ldb/pwd) "/classes")))]
-    (doall (map #(compile (symbol %)) p-other-namespaces))
-    (compile (symbol p-main))
-  )
-  "OK")
-
-(defn- exec [p-fn & other-args]
-  (if-let [f (resolve (symbol p-fn))]
-    (do
-      (swap! *runnings*
-        (fn [runnings]
-          (let [pid (first
-                      (drop-while
-                        (fn [c] (some #(= c %) (keys runnings)))
-                        (range)))]
-            (assoc runnings pid {
-              :start-at (Date.)
-              :function p-fn
-              :args other-args
-              :future (future (apply f other-args))}))))
-      "OK")
-      (str "Can't resolve function: " p-fn)))
-
-(defn- kill [str-pid]
-  (let [pid (Integer/parseInt str-pid)]
-    (swap! *runnings*
-      (fn [runnings]
-        (if-let [f (get-in runnings [pid :future])]
-          (if-not (future-cancel f)
-                  (throw (Exception. (str "Can't Stop Process: " pid))))
-          (throw (Exception. (str "No Such Process: " pid))))
-        (dissoc runnings pid)))
-    "OK"))
-
-(defn- ps []
-  (let [stat #(cond
-                (not (future? %)) "?"
-                (future-cancelled? %) "Cancelled"
-                (future-done? %) "Done"
-                :else "Running")]
-    (->> @*runnings*
-      (map
-        (fn [[pid p]]
-          (str "  {\"pid\":      " pid ",\r\n"
-               "   \"start-at\": \"" (:start-at p) "\",\r\n"
-               "   \"status\":   \"" (stat (:future p)) "\",\r\n"
-               "   \"cmd\":      \""
-                 (:name (:program p))
-                 (apply str (mapcat #(list " " %) (:args p)))
-               "\"}")))
-      (interpose ",\r\n")
-      (apply str)
-      (#(str "{\r\n" % "\r\n}")))))
-
-
-;; ----------------------------------------------------------------
 ;; handling
 
 (defn- proc [cmd-and-args]
@@ -92,19 +24,29 @@
         (cond
           ; general
           (= cmd "version") (str "emjed-" (get-version))
-         ;(= cmd "export")  (apply c-export args)
-         ;(= cmd "import")  (apply c-import args)
-          ; libraries and programs
-          (= cmd "compile") (apply p-compile args)
-          (= cmd "require") (apply p-require args)
-          (= cmd "exec")    (apply exec args)
-          (= cmd "kill")    (apply kill args)
-          (= cmd "ps")      (ps)
-          ; ldb general
           (= cmd "pwd")     (ldb/pwd)
           (= cmd "cd")      (do (ldb/cd (first args)) "OK")
           (= cmd "load")    (do (ldb/load) "OK")
           (= cmd "save")    (do (ldb/save) "OK")
+         ;(= cmd "export")
+         ;(= cmd "import")
+          ; libraries and programs
+         ;(= cmd "register")
+          (= cmd "pload")      (do (ldb/pload (keyword (first args)))
+                                   "OK")
+          (= cmd "registered") (json/generate-string (ldb/registered)
+                                 {:pretty true})
+          (= cmd "unregister") (do (ldb/unregister (keyword (first args)))
+                                   "OK")
+          (= cmd "build")      (do (ldb/build (keyword (first args)))
+                                   "OK")
+          (= cmd "exec-fn")    (ldb/exec-fn (first args) (rest args))
+          (= cmd "exec")       (ldb/exec (keyword (first args)))
+          (= cmd "kill")       (do (ldb/kill
+                                     (Integer/parseInt (first args)))
+                                   "OK")
+          (= cmd "ps")         (json/generate-string (ldb/ps)
+                                 {:pretty true})
           ; ldb conf
           (= cmd "get")     (json/generate-string
                               (ldb/get (ldb/qk2kv (first args))))
