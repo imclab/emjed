@@ -47,15 +47,19 @@
         (do
           (if (not (.exists f#)) (.mkdir f#))
           (binding [*compile-path* (.getCanonicalPath f#)]
-            (let [prog-attr# (~p-name-kw @*prog*)]
-              (doseq [name-space# (:name-spaces prog-attr#)]
-                (compile (symbol name-space#)))))))))
+            (let [prog-attr# (~p-name-kw @*prog*)
+                  name-spaces# (:name-spaces prog-attr#)]
+              (doseq [name-space# name-spaces#]
+                (compile (symbol name-space#)))
+              (if-let [main# (:main prog-attr#)]
+                (if (not (some #(= % main#) name-spaces#))
+                    (compile (symbol main#))))))))))
 
 ; for test
 ; should be included some function?
 (defmacro pload [p-name-kw]
  `(doseq [name-space# (:name-spaces (~p-name-kw @*prog*))]
-    (require (symbol name-space#))))
+    (require (symbol name-space#) :reload)))
 
 ; for test
 (defmacro exec-fn [fqf args] ; note args is a list

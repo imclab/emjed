@@ -15,6 +15,11 @@
 ;; ----------------------------------------------------------------
 ;; handling
 
+(defmacro jsonize [body]
+ `(.replace
+    (json/generate-string ~body {:pretty true})
+    "\n" "\r\n"))
+
 (defn- proc [cmd-and-args]
   (str
     (let [splits (re-seq #"[^ \t\r\n]+" cmd-and-args)
@@ -34,8 +39,7 @@
          ;(= cmd "register")
           (= cmd "pload")      (do (ldb/pload (keyword (first args)))
                                    "OK")
-          (= cmd "registered") (json/generate-string (ldb/registered)
-                                 {:pretty true})
+          (= cmd "registered") (jsonize (ldb/registered))
           (= cmd "unregister") (do (ldb/unregister (keyword (first args)))
                                    "OK")
           (= cmd "build")      (do (ldb/build (keyword (first args)))
@@ -45,14 +49,10 @@
           (= cmd "kill")       (do (ldb/kill
                                      (Integer/parseInt (first args)))
                                    "OK")
-          (= cmd "ps")         (json/generate-string (ldb/ps)
-                                 {:pretty true})
+          (= cmd "ps")         (jsonize (ldb/ps))
           ; ldb conf
-          (= cmd "get")     (json/generate-string
-                              (ldb/get (ldb/qk2kv (first args))))
-          (= cmd "getrec")  (json/generate-string
-                              (ldb/getrec (ldb/qk2kv (first args)))
-                              {:pretty true})
+          (= cmd "get")     (jsonize (ldb/get (ldb/qk2kv (first args))))
+          (= cmd "getrec")  (jsonize (ldb/getrec (ldb/qk2kv (first args))))
           (= cmd "set")     (do (ldb/set
                                   (ldb/qk2kv (first args))
                                     (json/parse-string (second args) true))
@@ -100,7 +100,7 @@
         (= (first lines) \`)
           (do (.write wtr
                 (str (try (->> (rest lines) (apply str) (load-string) (str))
-                          (catch Exception e (.toString e)))))
+                          (catch Exception e (.toString e))) "\r\n"))
               (.flush wtr)
               (recur (.readLine rdr)))
         (= (first lines) \f)

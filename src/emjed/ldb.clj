@@ -12,6 +12,10 @@
 (def ^:dynamic *prog-file* (atom "prog.json"))
 (def ^:dynamic *prog* (atom {}))
 
+(clojure.core/load "ldb_conf")
+(clojure.core/load "ldb_prog")
+(clojure.core/load "ldb_file")
+
 ;; ----------------------------------------------------------------
 ;; general
 (defmacro qk2kv [qk]
@@ -23,13 +27,16 @@
 (defmacro pwd [] `@*dir*)
 
 (defmacro load []
- `(doseq [[a# f#] [[*conf* @*conf-file*] [*prog* @*prog-file*]]]
-    (reset! a#
-      (json/parse-string
-        (try
-          (slurp (str @*dir* "/" f#))
-          (catch java.io.FileNotFoundException fnfe# "{}"))
-        true)))) ; do convert strings to keywords
+ `(do
+    (doseq [[a# f#] [[*conf* @*conf-file*] [*prog* @*prog-file*]]]
+      (reset! a#
+        (json/parse-string
+          (try
+            (slurp (str @*dir* "/" f#))
+            (catch java.io.FileNotFoundException fnfe# "{}"))
+          true))) ; do convert strings to keywords
+    (doseq [[p-name-kw# _#] @*prog*]
+      (pload p-name-kw#))))
 
 ;; This is used to remove an URL in the classpath added with
 ;; p-add-classpath
@@ -68,6 +75,3 @@
 ; TODO import
 ; TODO export
 
-(clojure.core/load "ldb_conf")
-(clojure.core/load "ldb_prog")
-(clojure.core/load "ldb_file")
