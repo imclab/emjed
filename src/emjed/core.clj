@@ -72,20 +72,24 @@
           args (rest splits)]
       (try
         (cond
-          (= cmd "fget") (let [ba (ldb/fget (first args))
-                               len (count ba)]
-                           (.write wtr (str len "\r\n"))
-                           (.flush wtr)
-                           (.write out ba 0 (count ba))
-                           "")
-          (= cmd "fput") (let [len (Integer/parseInt (second args))
-                               ba (byte-array len)]
-                           ; TODO loop with a timeout
-                           (.read in ba 0 len)
-                           (.readLine rdr)
-                           (ldb/fput (first args) ba)
-                           "OK")
-          (= cmd "fdel") (do (ldb/fdel (first args)) "OK")
+          (= cmd "flist") (jsonize (ldb/flist))
+          (= cmd "fget")  (let [ba (ldb/fget (first args))
+                                len (count ba)]
+                            (.write wtr (str len "\r\n"))
+                            (.flush wtr)
+                            (.write out ba 0 len)
+                            "")
+          (= cmd "tfget") (let [ba (ldb/fget (first args))]
+                            (.replace (apply str (map char ba))
+                              "\n" "\r\n"))
+          (= cmd "fput")  (let [len (Integer/parseInt (second args))
+                                ba (byte-array len)]
+                            ; TODO loop with a timeout
+                            (.read in ba 0 len)
+                            (.readLine rdr)
+                            (ldb/fput (first args) ba)
+                            "OK")
+          (= cmd "fdel")  (do (ldb/fdel (first args)) "OK")
           :else (str cmd ": command not found."))
         (catch Exception e (.toString e))))
   "\r\n"))
