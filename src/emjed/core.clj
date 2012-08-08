@@ -1,6 +1,7 @@
 (ns emjed.core
   (:gen-class)
   (:use     [clojure.java.io]
+            [clojure.string :only [join split]]
             [server.socket])
   (:require [emjed.ldb :as ldb]
             [cheshire.core :as json]
@@ -19,6 +20,11 @@
  `(.replace
     (json/generate-string ~body {:pretty true})
     "\n" "\r\n"))
+
+(defmacro bs-apply [s]
+ `(loop [c# ~s]
+    (let [r# (join (split c# #"[^\u0008]\u0008"))]
+      (if (= r# c#) r# (recur r#)))))
 
 (defn- proc [cmd-and-args]
   (str
@@ -108,24 +114,25 @@
 (defn- handler [in out]
   (with-open [rdr (reader in) wtr (writer out)]
     (ldb/cd)
-    (loop [lines (.readLine rdr)]
+    (loop [lines (bs-apply (.readLine rdr))]
       (cond
         (= (apply str (take 5 lines)) "close") nil
-        (= (last lines) \\) (recur (str lines "\r\n" (.readLine rdr)))
+        (= (last lines) \\) (recur (str lines "\r\n"
+                                        (bs-apply (.readLine rdr))))
         (= (first lines) \`)
           (do (.write wtr
                 (str (try (->> (rest lines) (apply str) (load-string) (str))
                           (catch Exception e (.toString e))) "\r\n"))
               (.flush wtr)
-              (recur (.readLine rdr)))
+              (recur (bs-apply (.readLine rdr))))
         (= (first lines) \f)
           (do (.write wtr (fproc lines in out rdr wtr))
               (.flush wtr)
-              (recur (.readLine rdr)))
+              (recur (bs-apply (.readLine rdr))))
         :else
           (do (.write wtr (proc lines))
               (.flush wtr)
-              (recur (.readLine rdr)))))))
+              (recur (bs-apply (.readLine rdr))))))))
 
 (def ^:dynamic *server* (atom nil))
 
