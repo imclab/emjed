@@ -72,35 +72,36 @@
                                             (ldb/qk2kv (second args)))
                                 "OK")
           ; ldb file
-          (= cmd "flist") (jsonize (ldb/flist))
-          (= cmd "fget")  (let [ba (ldb/fget (first args))
-                                len (count ba)]
-                            (.write wtr (str len "\r\n"))
-                            (.flush wtr)
-                            (.write out ba 0 len)
-                            "")
-          (= cmd "ftget") (apply str
-                            (interleave
-                              (re-seq #"[^\r\n]+"
-                                (slurp (str (ldb/pwd) "/" (first args))))
-                              (repeat "\r\n")))
-          (= cmd "fput")  (let [len (Integer/parseInt (second args))
-                                ba (byte-array len)]
-                            ; TODO loop with a timeout
-                            (.read in ba 0 len)
-                            (.readLine rdr)
-                            (ldb/fput (first args) ba)
-                            "OK")
-          (= cmd "ftput") (let [fname (str (ldb/pwd) "/" (first args))
-                                emark (second args)]
-                            (loop [line (.readLine rdr) lines ""]
-                              (if (or (= line emark)
-                                      (= (int (first line)) 0x04))
-                                  (spit fname lines)
-                                  (recur (.readLine rdr)
-                                         (str lines "\r\n" line))))
-                            "OK")
-          (= cmd "fdel")  (do (ldb/fdel (first args)) "OK")
+          (= cmd "flist")   (jsonize (ldb/flist))
+          (= cmd "fget")    (let [ba (ldb/fget (first args))
+                                  len (count ba)]
+                              (.write wtr (str len "\r\n"))
+                              (.flush wtr)
+                              (.write out ba 0 len)
+                              "")
+          (= cmd "ftget")   (apply str
+                              (interleave
+                                (re-seq #"[^\r\n]+"
+                                  (slurp (str (ldb/pwd) "/" (first args))))
+                                (repeat "\r\n")))
+          (= cmd "fput")    (let [len (Integer/parseInt (second args))
+                                  ba (byte-array len)]
+                              ; TODO loop with a timeout
+                              (.read in ba 0 len)
+                              (.readLine rdr)
+                              (ldb/fput (first args) ba)
+                              "OK")
+          (= cmd "ftput")   (let [fname (str (ldb/pwd) "/" (first args))
+                                  emark (second args)]
+                              (loop [line (.readLine rdr) lines ""]
+                                (if (or (= line emark)
+                                        (= (int (first line)) 0x04))
+                                    (spit fname lines)
+                                    (recur (.readLine rdr)
+                                           (str lines "\r\n" line))))
+                              "OK")
+          (= cmd "fdel")    (do (ldb/fdel (first args)) "OK")
+          (= cmd "frename") (do (ldb/frename (first args) (second args)) "OK")
           :else (str cmd ": command not found."))
         (catch Exception e (.toString e))))
     "\r\n"))
@@ -109,7 +110,6 @@
 ;  fput と fget だけ特殊扱いすればいい
 (defn- telnet-handler [in out]
   (with-open [rdr (reader in) wtr (writer out)]
-    (ldb/cd)
     (loop [line (bs-apply (.readLine rdr))]
       (if (= (apply str (take 5 line)) "close")
           nil
@@ -260,6 +260,5 @@
     (ldb/cd path)
     (ldb/cd "."))
   (start-telnet-server 3000)
-  (start-http-server 8080)
-  )
+  (start-http-server 8080))
 
