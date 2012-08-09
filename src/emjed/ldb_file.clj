@@ -1,15 +1,16 @@
 (in-ns 'emjed.ldb)
 
 (defmacro get-cp [path]
- `(if (= (first ~path) \/) ~path (str @*dir* "/" ~path)))
+ `(if (= (first ~path) \/) ~path (str @*dir* "/" @*file-dir* "/" ~path)))
 
 (defmacro flist []
- `(->> ((fn l# [f#]
-          (if (.isDirectory f#)
-              (mapcat l# (.listFiles f#))
-              (list (.getPath f#))))
-        (file @*dir*))
-    (map #(apply str (drop (inc (count @*dir*)) %)))))
+ `(let [cp# (str @*dir* "/" @*file-dir*)]
+    (->> ((fn l# [f#]
+            (if (.isDirectory f#)
+                (mapcat l# (.listFiles f#))
+                (list (.getPath f#))))
+          (file cp#))
+      (map #(apply str (drop (inc (count cp#)) %))))))
 
 (defmacro fput [path ba]
  `(with-open [os# (output-stream (get-cp ~path))]

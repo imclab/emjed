@@ -82,7 +82,8 @@
           (= cmd "ftget")   (apply str
                               (interleave
                                 (re-seq #"[^\r\n]+"
-                                  (slurp (str (ldb/pwd) "/" (first args))))
+                                  (slurp (str (ldb/pwd) "/files/"
+                                    (first args))))
                                 (repeat "\r\n")))
           (= cmd "fput")    (let [len (Integer/parseInt (second args))
                                   ba (byte-array len)]
@@ -91,7 +92,7 @@
                               (.readLine rdr)
                               (ldb/fput (first args) ba)
                               "OK")
-          (= cmd "ftput")   (let [fname (str (ldb/pwd) "/" (first args))
+          (= cmd "ftput")   (let [fname (str (ldb/pwd) "/files/" (first args))
                                   emark (second args)]
                               (loop [line (.readLine rdr) lines ""]
                                 (if (or (= line emark)

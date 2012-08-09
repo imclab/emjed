@@ -11,6 +11,7 @@
 (def ^:dynamic *conf* (atom {}))
 (def ^:dynamic *prog-file* (atom "prog.json"))
 (def ^:dynamic *prog* (atom {}))
+(def ^:dynamic *file-dir* (atom "files"))
 
 (clojure.core/load "ldb_conf")
 (clojure.core/load "ldb_prog")
@@ -68,7 +69,7 @@
             (reset! *dir* path)
             (swap! *dir* #(.getCanonicalPath (file (str % "/" path))))))
         (init-classloader)
-        (add-classpath (str @*dir* "/src"))
+        (add-classpath (str @*dir* "/" @*file-dir* "/src"))
         (add-classpath (str @*dir* "/classes"))
         (load)))
 
