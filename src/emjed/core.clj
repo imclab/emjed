@@ -193,7 +193,7 @@
       (let [mes (proc params in out rdr wtr)]
         (.write wtr
           (str "HTTP/1.1 200 OK\r\n"
-               "Content-Type: text/json\r\n"
+               "Content-Type: application/json\r\n"
                "Content-Length: " (count mes) "\r\n\r\n"
                mes))
         (.flush wtr))))
