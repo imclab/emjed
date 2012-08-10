@@ -46,7 +46,12 @@
          ;(= cmd "export")
          ;(= cmd "import")
           ; libraries and programs
-         ;(= cmd "register")
+          (= cmd "register")   (do
+          (println "[" (apply str (rest args)) "]")
+           (ldb/register (keyword (first args))
+                                      (json/parse-string
+                                        (apply str (rest args)) true))
+                                   "OK")
           (= cmd "pload")      (do (ldb/pload (keyword (first args)))
                                    "OK")
           (= cmd "registered") (jsonize (ldb/registered))
@@ -218,10 +223,11 @@
               (= (header :method) "POST")
                 (let [cl (Integer/parseInt
                            (:Content-Length
-                           (:headers header)))
+                             (:headers header)))
                       buf (make-array Byte/TYPE cl)
                       ; -> May be needed timeout
                       body (loop [len 0]
+(println (class in))
                              (let [n (.read in buf len (- cl len))]
                                (if (< n 0) ""
                                    (if (<= cl (+ len n))
@@ -231,7 +237,7 @@
                 :else (http-method-not-allowed wtr))
              (http-bad-request wtr)
           )
-          (recur (.readLine rdr) (str lines line))))))
+          (recur (.readLine rdr) (str lines line "\r\n"))))))
 
 ; ----------------------------------------------------------------
 
