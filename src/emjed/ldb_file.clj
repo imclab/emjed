@@ -12,17 +12,17 @@
           (file cp#))
       (map #(apply str (drop (inc (count cp#)) %))))))
 
-(defmacro fput [path ba]
- `(with-open [os# (output-stream (get-cp ~path))]
-    (.write os# ~ba)))
+(defmacro fput [path ca]
+ `(with-open [os# (writer (output-stream (get-cp ~path)))]
+    (.write os# ~ca)))
 
 (defmacro fget [path]
  `(let [cp# (get-cp ~path)
         len# (.length (file cp#))
-        ba# (byte-array len#)]
-    (with-open [is# (input-stream cp#)]
-      (.read is# ba# 0 len#))
-    ba#))
+        ca# (char-array len#)]
+    (with-open [is# (reader (input-stream cp#))]
+      (.read is# ca# 0 len#))
+    ca#))
  
 (defmacro fdel [path]
  `(delete-file (get-cp ~path)))

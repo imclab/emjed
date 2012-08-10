@@ -21,24 +21,22 @@ var getURL = (function() {
 })();
 
 function onc() {
-  console.log("FOO");
   $('response').value = "";
-  console.log($('request').value);
   getURL(
     "http://" + location.hostname + ":8080/",
     $('request').value,
     function (d) {
-      console.log("BAR");
-      console.log(d);
       $('response').value = d;
     });
+  $('request').value = "";
+  $('request').focus();
 }
 
 </script>
 </head>
 <body>
-<textarea id="request"></textarea><br />
+<textarea id="request" rows="8" cols="80"></textarea><br />
 <input type="submit" onclick="onc();" /><br />
-<textarea id="response"></textarea><br />
+<textarea id="response" rows="24" cols="80"></textarea><br />
 </body>
 </html>
