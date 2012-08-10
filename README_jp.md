@@ -1,0 +1,369 @@
+# これは何
+
+Emjed は組込コンピュータ向けの, プログラムを管理するソフトウェアです.
+Clojure で書かれています.
+
+Emjed は, ターゲットとなるコンピュータに JRE 1.6 もしくはそれ以上の
+実装がインストールされ, セットアップされていることを必要とします.
+
+Emjed はターゲットコンピュータ上の JVM の上で稼動し,
+プログラムの管理を, TCP 接続を通してリモートコンピュータに提供します.
+ここで言うプログラムの管理とは
+* プログラムソースコードの送信, 取得, コンパイル
+* バイナリプログラムの送信, 取得.
+* プログラムの登録, 削除, 更新
+* プログラムの実行タイミングの指定
+* 登録されたプログラムの実行, 停止
+* プログラムが利用する設定項目の閲覧・編集
+* プログラムが利用するリソースファイルの送信, 取得
+
+です.
+
+Emjed は現在では Clojure で書かれたプログラムのみサポートして
+いますが, Emjed 自身が Clojure で書かれている事実とは独立して,
+枠組みとしては, 他の言語も受け入れ可能です.
+近い将来, 他の言語のサポートも追加される可能性があります.
+
+Emjed は一つのディレクトリをローカルデータベース (以下 LDB)
+として利用します.
+LDB は,
+* コンフィギュレーション: プログラムが利用する設定項目
+* 登録プログラム情報 : プログラムの名前空間や実行タイミングの情報
+* ファイル群 : プログラムのソースコード, バイナリ, リソースファイルなど
+
+より成ります.
+
+Emjed は LDB にアクセスするインターフェイスを 2種類提供します.
+ライブラリインターフェイスとネットワークインターフェイスです.
+ネットワークインターフェイスは telnet インターフェイスと
+http インターフェイスが提供されており, データ形式は JSON を
+採用しているため,
+プログラムの管理や,
+プログラムがコンフィギュレーションに入出力している情報の
+モニターなどを WEB アプリケーションとして容易に構築できます.
+LDB を閲覧編集するサンプル WEB ページも付属します. **(作成中)**  
+
+    http://<emjedを稼動しているホスト>:8080/tree.html
+
+にアクセスしてみてください.
+
+コンフィギュレーションと登録プログラム情報は
+LDB 内の特定のファイルより起動時および要求された時にロードされ,
+メモリ上に保持されます.
+また, ユーザの要求があった時に, 元のファイルに保存されます.
+
+# 使い方
+
+JRE のインストールされたコンピュータで
+
+    java -jar embed-x.x-standalone.jar [dir]
+
+のようにすることで, TCP接続を通して, プログラムの管理が可能に
+なります.
+
+# コンフィギュレーション
+
+プログラムの設定項目や, 一時的に保存しておきたいデータなどを保存する
+メモリベースのデータベースです.  
+メモリ中では Clojure のマップとして存在し, ライブラリインターフェイス
+を通して自由にアクセスできます.
+起動時にそこからロードしたり, ユーザの指定時に内容を保存する. conf.json
+ファイルは, 拡張子が示すように JSON 形式で記述されます.
+また, コンフィギュレーションにはネットワークインターフェイスを通して, 
+自由にアクセスできますが, この際のデータ表現も JSON で行います.
+
+ライブラリインターフェイスで取り扱うマップにおけるキーはキーワードであり,
+ファイル上やネットワークインターフェイスで取り扱う JSON では,
+マップにおけるキーは文字列となりますので注意が必要です.
+
+メモリ中でコンフィギュレーションが,
+
+    {:foo "Hello"
+     :bar "World"
+     :baz {:qux 3.14}
+    }
+
+のようになっている場合,
+ライブラリインターフェイスで `ldb/get [:baz :qux]` とすると `3.14`
+が返り, ネットワークインターフェイスで `get :baz:qux` とすると
+`3.14` が, `getrec :` とすると
+
+    {"foo": "Hello",
+     "bar": "World",
+     "baz": {"qux": 3.14}}
+
+が返ります. 保存命令を実行すると, `getrec :` した場合と同じ表現で
+conf.json ファイルが生成されます.
+
+# 登録プログラム情報
+
+プログラムの情報を管理します.  
+プログラムは, 他のプログラムから利用されることのみを前提とする *ライブラリ*
+と, 単体のプログラムとして実行可能な *実行可能プログラム* の両方を指します.  
+プログラムの実態となるバイナリやソースコードは別途ファイルとして送受信
+します. **(要検討)**  
+
+プログラムの情報は
+* プログラムの名称
+* プログラムが実装する名前空間のリスト
+* 実行可能プログラムの場合, エントリポイント関数を実装する名前空間
+* 実行可能プログラムの場合, 起動時に自動実行するか, 手動実行するかの情報
+* 実行可能プログラムの場合, 実行タイミングの指定
+
+から成ります.
+
+# ファイル群
+
+プログラムのソースコード, コンパイル済みバイナリ,
+プログラムからアクセスされるリソース.
+http インターフェイスで WEB ページとしてアクセスされる HTML ファイル.
+などを LDB 以下の files というディレクトリの下に自由に配置します.  
+ファイルの送信, 取得, 削除, ディレクトリや名称の変更などの操作が提供されます.
+
+# ライブラリインターフェイス
+
+## 概要
+
+ライブラリインターフェイスは, プログラムに対して,
+LDB に対するアクセスを提供します.  
+ライブラリインターフェイスを利用するには
+
+    (require '[emjed.ldb :as ldb])
+
+のようにして, emjed.ldb 名前空間を別名 ldb としてロードします.
+
+引数および返り値は Clojure のリテラルで行います.
+`kv` は `[:foo :bar]` といった形式のキーワードのベクタです.
+`val` は文字列, 数値, 真偽値, マップ, ベクタです.
+`lcd/pwd` および `lcd/cd` で取得・変更できる, LDB のカレントディレクトリは,
+OS のルートを基準としたパス.
+一文字目が f で始まるファイル関連の命令で取り扱う path は LDB の
+カレントディレクトリをルートとする絶対パスです.
+
+## LDB 全般
+
+命令 | 引数 | 内容
+---------|------------|-----
+`ldb/pwd` |             | 現在の LDB のカレントディレクトリを取得します.
+`ldb/cd`  | path        | 現在の LDB のカレントディレクトリを変更し, `conf.json` と `prog.json` の内容をメモリ上にロードします. path は稼動している OS に於いて正しい, 相対パスまたは絶対パスです.
+`ldb/load` | | LDB 以下の conf.json ファイルと prog.json ファイルの内容を, それぞれ, コンフィギュレーションおよび登録プログラム情報としてメモリ中に(再)ロードします.
+`ldb/save` | | メモリ中のコンフィギュレーションと登録プログラム情報を LDB 以下の conf.json ファイルと prog.json ファイルとして保存します.
+`ldb/export` | | conf.json, prog.json 及び files 以下のファイルを zip 圧縮して単一のファイルとして取得します. (未実装)
+`ldb/import` | | conf.json, prog.json 及び files 以下のファイルを格納した zip 圧縮された単一のファイルを送信しロードします. (未実装)
+
+## 登録プログラム情報
+
+命令 | 引数 | 内容
+---------|------------|-----
+`ldb/register` | name-kw map | プログラムを登録します. 実態となるファイルは別途転送済みとします. name-kw にプログラムの名称をキーワードとして与え, map は `:name-spaces` に名前空間を文字列表現したもののベクタを, `:main` に実行可能プログラムとして実行する場合にエントリポイントとなる名前空間を文字列表現したもの, `:execution` に自動実行させたいか手動実行したいかに応じて "AUTO" または "MANUAL" を, `:timing` に `"ONCE"`, `"LOOP"` または, 後ほど規定する文字列表現された周期実行の実行タイミングを記載した文字列を格納したマップです. `:main` に記載した名前空間は `:name-spaces` に記載する必要はありません. 従ってエントリポイントとなる名前空間一つだけからなる実行可能プログラムは, `:name-spaces` を省略できます. またライブラリの場合は, `:main` 及び `:timing` を省略できます.
+`ldb/pload`      | name-kw | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をロードします.
+`ldb/registered` |         | 登録されたプログラムの一覧をマップで返します.
+`ldb/unregister` | name-kw | 登録されたプログラムの名称をキーワードとして与え, 登録を削除します.
+`ldb/build`      | name-kw | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をコンパイルします.
+`ldb/exec-fn`    | fqf args ... | 名前空間で完全修飾された関数名を文字列として与え, 任意の型の任意の数の引数を指定して関数を実行します. デバッグ用です.
+`ldb/exec`       | name-kw | 登録されたプログラムの名称をキーワードとして与え,  `:main` に指定された名前空間の `-main` 関数を, `:timing` に指定された方法で実行します. 実行したプロセスの ID を返します. *プロセス* とは実行中のプログラムの実態を指す言葉で, 同じプログラムを複数同時に起動した場合別のプロセスとなります.
+`ldb/kill`       | pid     | プロセス ID を指定して実行中のプログラムを停止します.
+`ldb/ps`         |         | プロセス一覧をマップで返します. キーがプロセス ID, 値はプロセスの状態を格納するマップです.
+
+## コンフィギュレーション
+
+命令 | 引数 | 内容
+---------|------------|-----
+`ldb/get`    | kv      | コンフィギュレーションの kv に指定されたノードの内容を取得します. 対象ノードが文字列, 数値, 真偽値の場合は値そのもの, マップの場合は含まれるキーの一覧をベクタとして返します. シーケンスの場合の挙動は不定です.
+`ldb/getrec` | kv      | コンフィギュレーションの kv に指定されたノードの内容を取得します. マップやシーケンスの場合も全て下位の内容を含みます.
+`ldb/set`    | kv val  | コンフィギュレーションの kv ノードの内容を val に指定された内容で上書きします. 対象ノードおよび先祖となるノードが存在しない場合は根まで遡って生成されます. ただし, 先祖ノードのいずれかがマップではない型で既に存在する場合例外を返します.
+`ldb/del`    | kv      | kv に指定されたノード（およびその全ての子孫ノード）を削除します.
+`ldb/rename` | skv dkv | skv に指定されたノードを dkv に指定されたノードに移動します.
+
+## ファイル群
+
+LDB として動作している現在のディレクトリ以下の `files` という名称のディレクトリ以下のファイル取扱ます. `src` ディレクトリは特別で, プログラムのソースコードを格納します.
+
+命令 | 引数 | 内容
+---------|------------|-----
+`ldb/flist`   |         | ファイルのリストを取得します.
+`ldb/fget`    | path    | path に指定されたファイルの内容をバイト配列として取得します.
+`ldb/ftget`   | path    | path に指定されたファイルの内容を文字列として取得します.
+`ldb/fput`    | path ba | path に指定されたファイルに, ba に指定されたバイト配列の内容を上書き保存します.
+`ldb/ftput`   | path text | path に指定されたファイルに, text で指定された文字列の内容を上書き保存します.
+`ldb/fdel`    | path    | path に指定されたファイルを削除します.
+`ldb/frename` | spath dpath | spath に指定されたファイルを dpath に指定されたファイルに名称変更（ディレクトリの移動を含んで良い）します.
+
+# ネットワークインターフェイス
+
+`qk` (Qualified Keys) は, ルート `:` からのキーの連鎖を `:` で繋いで文字列として表現したもの. `:foo:bar` のように指定する.
+`json-exp` はデータの JSON 表現.
+
+## 全般
+
+命令 | パラメータ | 内容
+-----|------------|----
+`version` | | バージョンを取得
+`pwd`     | | LDB として設定されている現在のディレクトリを取得
+`cd`      | path | path に指定されたディレクトリを LDB の現在のディレクトリとして設定し, conf.json および prog.json の内容をロード.
+`load`    | | LDB として設定されている現在のディレクトリの conf.json と prog.json の内容を(再)ロード.
+`save`    | | メモリ中のコンフィギュレーションと登録プログラム情報を conf.json および prog.json に保存.
+`export`  | | conf.json, prog.json および files 以下のファイルを zip アーカイブとして取得. (未実装)
+`import`  | | conf.json, prog.json および files 以下のファイル群を含む zip アーカイブを転送, LDBとして設定されている現在のディレクトリに展開, conf.json と prog.json の内容をコンフィギュレーション, 登録プログラム情報としてロードする.
+
+## コンフィギュレーション
+
+命令 | パラメータ | 内容
+-----|------------|----
+`get`    | qk      | qk に指定されたノードの内容を取得する. 文字列, 数値, 真偽値, null の場合は, その値の JSON 表現を, マップの場合は含まれるキーの一覧を JSON の文字列の配列として返す. 対象ノードが配列の場合の動作は不定.
+`getrec` | qk      | qk に指定されたノードの内容を取得する.
+`set`    | qk json-exp | qk に指定されたノードの内容を json-exp に指定された内容で上書き.
+`del`    | qk      | qk に指定されたノード以下の全ての子孫ノードを削除
+`rename` | sqk dqk | sqk
+
+## 登録プログラム情報
+
+命令 | パラメータ | 内容
+-----|------------|----
+`register` | map | プログラムの登録. (未実装)
+`pload` | name | name に指定された登録プログラムの全ての名前空間をロード
+`registered` | | 登録プログラム情報の取得
+`unregister` | name | name に指定された登録プログラムを削除
+`build`      | name | name に指定された登録プログラムの全ての名前空間をコンパイル
+`exec-fn`    | fqf args ... | fqf で名前空間で完全修飾された関数名として与えられた関数を与えられた引数で実行. (デバッグ用. 不完全. 引数の型が全て文字列になってしまうがどうやって回避するか.)
+`exec` | name | name に指定された登録プログラムを実行
+`ps`   |      | プロセス一覧の取得
+`kill` | pid  | pid に指定されたプロセスを停止
+
+## ファイル群
+
+命令 | パラメータ | 内容
+-----|------------|----
+`flist`   |             |
+`fget`    | path        |     : returns size, "\r\n", binary, "\r\nOK\r\n"
+`fput`    | path size   | : follow "\r\n", binary, "\r\n". returns "OK\r\n"
+`fdel`    | path        |
+`frename` | spath dpath |
+
+# 利用例
+
+ターゲットコンピュータ上に任意の名称のディレクトリ (ここでは `emjed.ldb`
+とします）と, その下に `files` という名前のディレクトリ,
+さらに下に `src` という名前のディレクトリを作成しておきます.  
+**(これがネットワーク上からできないとおかしい)**  
+emjed を起動します.
+
+    java -jar emjed-x.x-standalone.jar
+
+ターゲットコンピュータと TCP ポート 3000 で通信可能なコンピュータから
+telnet でアクセスします.
+(仮にターゲットコンピュータのホスト名を `tcomp` とします.)
+
+    telnet tcomp 3000
+
+ターゲットコンピュータ上で emjed を起動した時のカレントディレクトリから
+の相対パスまたは絶対パスで指定し, 作成しておいたディレクトリを LDB とする
+よう変更します.
+
+    cd emjed.ldb
+    OK
+
+コンフィギュレーションに `foo-input` という項目を追加し,
+内容を "Hello" とします.
+
+    set :foo-input "Hello"
+    OK
+
+コンフィギュレーションの内容を確認します.
+
+    getrec :
+    {
+      "foo-input" : "Hello"
+    }
+
+`:foo-input` の内容を取得し, 文字列を反転して, `:foo-output` に
+設定するプログラムのソースコードを送信します.
+
+    ftput src/foo.clj
+    (ns foo (:gen-class))
+    (require '[emjed.ldb :as ldb])
+    (defn -main []
+      (ldb/set [:foo-output]
+        (apply str (reverse (ldb/get [:foo-input])))))
+    ^D
+    OK
+
+ソースコードの内容を確認します.
+
+    ftget src/foo.clj
+    (ns foo (:gen-class))
+    (require '[emjed.ldb :as ldb])
+    (defn -main []
+      (ldb/set [:foo-output]
+        (apply str (reverse (ldb/get [:foo-input])))))
+    
+名前空間 `foo` をエントリポイントとしてプログラム `bar` を登録します.
+(名前空間を指定しているか, 登録した名称を指定しているかの区別のために,
+わざと別の名称にしていますが, 実際は関連した名称を利用します.)
+
+    register bar {"main": "foo", "timing": "ONCE"}
+    OK
+
+登録されているプログラムの一覧を確認します.
+
+    registered
+    {
+      "bar" : {
+        "main" : "foo",
+        "timing" : "ONCE"
+      }
+    }
+
+`bar` が必要とする名前空間のソースコード (今の場合 `foo` 名前空間を
+構成する `foo.clj` ファイル.) をコンパイルします.
+
+    build bar
+    OK
+
+コンパイルした場合は自動でロードされますが,
+コンパイル済みファイルを転送した場合, `pload` でロードする必要があります.
+登録済みの情報が保存されている場合は,
+emjed 起動時に自動でロードします.
+`bar` を実行します.
+
+    exec bar
+    0
+
+プロセス番号 (今の場合は 0) が返りました.
+コンフィギュレーションの内容を確認します.
+
+    getrec :
+    {
+      "foo-output" : "olleH",
+      "foo-input" : "Hello"
+    }
+
+# License
+
+Copyright (c) 2011, Yoshinori Kohyama (http://algobit.jp/)  
+All rights reserved.  
+
+Redistribution and use in source and binary forms, with or
+without modification, are permitted provided that the following
+conditions are met:
+
+Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials provided
+with the distribution.  
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
+THE POSSIBILITY OF SUCH DAMAGE.
+

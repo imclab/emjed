@@ -1,3 +1,38 @@
+# 実行時に使うユーザとグループ
+$ group
+emjed emjed
+$ user
+emjed
+
+$ ls -l /usr/local/lib/emjed
+lrwxrwxrwx 1 root root .... emjed.jar -> emjed-x.x.x-standalone.jar
+-rw-r--r-- 1 root root .... emjed-x.x.x-standalone.jar
+
+$ ls -l /usr/local/bin/emjed
+-rwxr-xr-x 1 root root .... /usr/local/bin/emjed
+
+$ cat   /usr/local/bin/emjed
+#!/bin/sh
+export _JAVA_OPTIONS=-Dfile.encoding=UTF-8
+su emjed
+chroot /usr/bin/java -jar /usr/local/lib/emjed/emjed.jar <- 引数
+
+$ ll  /etc/init.d/emjed
+-rwxr-xr-x 1 root root ..... /etc/init.d/emjed
+cat /etc/init.d/emjed
+#!/bin/
+start () {
+  echo -e "Starting Emjed"
+  /usr/local/bin/emjed
+  return 0
+}
+
+/etc/rc2.d/S20emjed.sh -> ../init.d/emjed
+/etc/rc3.d/S20emjed.sh -> ../init.d/emjed
+/etc/rc4.d/S20emjed.sh -> ../init.d/emjed
+/etc/rc5.d/S20emjed.sh -> ../init.d/emjed
+
+
 ----------------------------------------------------------------
 TODO
 
