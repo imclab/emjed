@@ -52,6 +52,28 @@ LDB 内の特定のファイルより起動時および要求された時にロ�
 メモリ上に保持されます.
 また, ユーザの要求があった時に, 元のファイルに保存されます.
 
+# インストール方法
+
+[downloads](https://github.com/kohyama/emjed/downloads) 
+にビルド済み JAR ファイルがあります.
+最新の emjed-x.x-standalone.jar をダウンロードしてターゲットコンピュータ
+に任意の方法でコピーしてください.
+
+ソースからビルドする場合は,  
+[git](http://git-scm.com/) および
+[leiningen](https://github.com/technomancy/leiningen/) のインストールされた
+任意のコンピュータで,
+
+    $ git clone git://github.com/kohyama/emjed.git
+    $ cd emjed/
+    $ lein uberjar
+
+とすることで emjed-x.x-standalone.jar が生成されます.
+$ はお使いのコンピュータのコマンドラインプロンプトに読み替えて下さい.
+x.x は現行の emjed のバージョン番号で読み替えて下さい.
+emjed-x.x-standalone.jar をターゲットとなるコンピュータに任意の方法
+でコピーしてください.
+
 # 使い方
 
 JRE のインストールされたコンピュータで
@@ -80,8 +102,7 @@ JRE のインストールされたコンピュータで
 
     {:foo "Hello"
      :bar "World"
-     :baz {:qux 3.14}
-    }
+     :baz {:qux 3.14}}
 
 のようになっている場合,
 ライブラリインターフェイスで `ldb/get [:baz :qux]` とすると `3.14`
