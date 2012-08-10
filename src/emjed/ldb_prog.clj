@@ -124,6 +124,7 @@
                 (future-done? %) "Done"
                 :else "Running")]
     (map (fn [[pid# p#]]
-           (dissoc (assoc p# :pid pid# :state (stat# (:future p#)))))
+           (dissoc (assoc p# :pid pid# :state (stat# (:future p#)))
+             :future))
          @*runnings*)))
 
