@@ -17,6 +17,5 @@
         cheshire.parse
         cheshire.monad]
   :omit-source true
-  :resources-path "resources"
   :main emjed.core
 )

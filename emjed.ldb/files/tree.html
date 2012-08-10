@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<script type="text/javascript">
+function $(id) { return document.getElementById(id); }
+
+var getURL = (function() {
+  var xhr;
+  xhr = new XMLHttpRequest();
+  return function(url, params, callback) {
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4)
+        callback(xhr.responseText, xhr.getResponseHeader("Content-Type"));
+    };
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader("If-Modified-Since", "Thu, 01 Jun 1970 00:00:00 GMT");
+    xhr.send(encodeURIComponent(params));
+  };
+})();
+
+function onc() {
+  console.log("FOO");
+  $('response').value = "";
+  console.log($('request').value);
+  getURL(
+    "http://" + location.hostname + ":8080/",
+    $('request').value,
+    function (d) {
+      console.log("BAR");
+      console.log(d);
+      $('response').value = d;
+    });
+}
+
+</script>
+</head>
+<body>
+<textarea id="request"></textarea><br />
+<input type="submit" onclick="onc();" /><br />
+<textarea id="response"></textarea><br />
+</body>
+</html>
