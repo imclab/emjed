@@ -36,8 +36,10 @@
             (slurp (str @*dir* "/" f#))
             (catch java.io.FileNotFoundException fnfe# "{}"))
           true))) ; do convert strings to keywords
-    (doseq [[p-name-kw# _#] @*prog*]
-      (pload p-name-kw#))))
+    (doseq [[p-name-kw# {exec# :execution}] @*prog*]
+      (pload p-name-kw#)
+      (if (= exec# "AUTO")
+          (exec p-name-kw#)))))
 
 ;; This is used to remove an URL in the classpath added with
 ;; p-add-classpath
