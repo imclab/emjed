@@ -55,11 +55,11 @@
                 (if (not (some #(= % main#) name-spaces#))
                     (compile (symbol main#))))))))))
 
-; for test
-; should be included some function?
 (defmacro pload [p-name-kw]
- `(doseq [name-space# (:name-spaces (~p-name-kw @*prog*))]
-    (require (symbol name-space#) :reload)))
+ `(let [{onss# :name-spaces mns# :main} (~p-name-kw @*prog*)
+        nss# (if mns# (cons mns# onss#) onss#)]
+    (doseq [name-space# nss#]
+      (require (symbol name-space#) :reload))))
 
 ; for test
 (defmacro exec-fn [fqf args] ; note args is a list
