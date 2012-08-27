@@ -155,6 +155,7 @@
   (let [mes "<html><body><h1>405 Method Not Allowed</h1></body></html>"]
     (.write wtr
       (str "HTTP/1.1 405 Method Not Allowed\r\n"
+           "Access-Control-Allow-Origin: *\r\n"
            "Content-Length: " (+ 2 (count mes)) "\r\n\r\n"
            mes "\r\n"))
     (.flush wtr)))
@@ -163,6 +164,7 @@
   (let [mes "<html><body><h1>400 Bad Request</h1></body></html>"]
     (.write wtr
       (str "HTTP/1.1 400 Bad Request\r\n"
+           "Access-Control-Allow-Origin: *\r\n"
            "Content-Length: " (+ 2 (count mes)) "\r\n\r\n"
            mes "\r\n"))
     (.flush wtr)))
@@ -171,6 +173,7 @@
   (let [mes "<html><body><h1>404 Not Found</h1></body></html>"]
     (.write wtr
       (str "HTTP/1.1 404 Not Found\r\n"
+           "Access-Control-Allow-Origin: *\r\n"
            "Content-Length: " (+ 2 (count mes)) "\r\n\r\n"
            mes "\r\n"))
     (.flush wtr)))
@@ -185,6 +188,7 @@
             (do
               (.write wtr
                 (str "HTTP/1.1 200 OK\r\n"
+                     "Access-Control-Allow-Origin: *\r\n"
                      "Content-Type: text/html\r\n"
                      "Content-Length: " len "\r\n\r\n"))
               (.flush wtr)
@@ -192,6 +196,7 @@
       (let [mes (proc params rdr wtr)]
         (.write wtr
           (str "HTTP/1.1 200 OK\r\n"
+               "Access-Control-Allow-Origin: *\r\n"
                "Content-Type: application/json\r\n"
                "Content-Length: " (count mes) "\r\n\r\n"
                mes))
@@ -201,6 +206,7 @@
   (let [mes (proc body rdr wtr)]
     (.write wtr
       (str "HTTP/1.1 200 OK\r\n"
+           "Access-Control-Allow-Origin: *\r\n"
            "Content-Type: text/json\r\n"
            "Content-Length: " (count mes) "\r\n\r\n"
            mes))
