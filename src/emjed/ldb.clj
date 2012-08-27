@@ -71,7 +71,7 @@
             (reset! *dir* path)
             (swap! *dir* #(.getCanonicalPath (file (str % "/" path))))))
         (init-classloader)
-        (add-classpath (str @*dir* "/" @*file-dir* "/src"))
+        (add-classpath (str @*dir* "/src"))
         (add-classpath (str @*dir* "/classes"))
         (load)))
 
