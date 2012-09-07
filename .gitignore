@@ -2,6 +2,7 @@
 *jar
 /lib
 /classes
+/emjed.ldb/classes
 /native
 /.lein-failures
 /checkouts
