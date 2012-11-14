@@ -7,17 +7,17 @@ Emjed requires an implementation of JRE 1.6 or higher installed
 and configured.
 
 Emjed runs on a JVM on a target computer, and gives controlling
-of programs to remove computers via TCP connection.
-Controlling programs in this context are:
+of programs to remote computers via TCP connection.
+In this context, "controlling programs" means:
 * Putting, getting and compiling of program source code
 * Putting and getting of binary programs
-* Registration, unregistration and delete of programs
-* Specifing timings of registered programs
+* Registration, unregistration and deletion of programs
+* Specifing execution timings of the registered programs
 * Starting and stopping registered programs
 * Viewing and editing configuration items for programs
 * Putting and getting resource files for programs
 
-Emjed currently supports programs written in only Clojure.
+Emjed currently supports programs written only in Clojure.
 Independent of the fact that emjed are written in Clojure,
 the framework it gives accepts other languages.
 Supports for other languages may be added near future.
