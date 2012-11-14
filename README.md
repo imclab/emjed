@@ -147,25 +147,24 @@ http インターフェイスで WEB ページとしてアクセスされる HTM
 などを LDB 以下の files というディレクトリの下に自由に配置します.  
 ファイルの送信, 取得, 削除, ディレクトリや名称の変更などの操作が提供されます.
 
-# ライブラリインターフェイス
+# Library Interface
 
-## 概要
+## Abstraction
 
-ライブラリインターフェイスは, プログラムに対して,
-LDB に対するアクセスを提供します.  
-ライブラリインターフェイスを利用するには
+The library interface provides for programs to access the LDB.
+To use the interface, load the `emjed.ldb` namespace with an
+alias `ldb`.
 
     (require '[emjed.ldb :as ldb])
 
-のようにして, emjed.ldb 名前空間を別名 ldb としてロードします.
-
-引数および返り値は Clojure のリテラルで行います.
-`kv` は `[:foo :bar]` といった形式のキーワードのベクタです.
-`val` は文字列, 数値, 真偽値, マップ, ベクタです.
-`lcd/pwd` および `lcd/cd` で取得・変更できる, LDB のカレントディレクトリは,
-OS のルートを基準としたパス.
-一文字目が f で始まるファイル関連の命令で取り扱う path は LDB の
-カレントディレクトリをルートとする絶対パスです.
+Arguments and return values of the commands are clojure literals.  
+`kv` refers a vector of keywords like `[:foo :bar]`.  
+`val` refers a string, a numerical, a boolean, a map or a vector.  
+A path of a return value from `lcd/pwd` or an argument of `lcd/cd`
+is a current directory of the LDB
+in format of an absolute or a relative path in your OS's file system.  
+Path arguments for commands begging with the letter 'f' are absolute
+paths with assumed the current directory of LDB as the root.
 
 ## LDB 全般
 
