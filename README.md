@@ -91,32 +91,36 @@ for programs and temporary data.
 On memory, it is a map of Clojure.
 You can freely access the map with the library interface.
 (Sorry I'm on translating below from Japanese to English)
-起動時にそこからロードしたり, ユーザの指定時に内容を保存する. conf.json
-ファイルは, 拡張子が示すように JSON 形式で記述されます.
-また, コンフィギュレーションにはネットワークインターフェイスを通して, 
-自由にアクセスできますが, この際のデータ表現も JSON で行います.
 
-ライブラリインターフェイスで取り扱うマップにおけるキーはキーワードであり,
-ファイル上やネットワークインターフェイスで取り扱う JSON では,
-マップにおけるキーは文字列となりますので注意が必要です.
+A file `conf.json` is to load configuration from or save configuration to
+and it's described in JSON format as the extension implies.
 
-メモリ中でコンフィギュレーションが,
+JSON format is also used as a data format when users access
+the configuration via the network interface
+
+Note that keywords of Clojure are used as keys in the library interface,
+but strings are used as keys in JSON being used in files or the
+network interface.
+
+When the configuration is 
 
     {:foo "Hello"
      :bar "World"
      :baz {:qux 3.14}}
 
-のようになっている場合,
-ライブラリインターフェイスで `ldb/get [:baz :qux]` とすると `3.14`
-が返り, ネットワークインターフェイスで `get :baz:qux` とすると
-`3.14` が, `getrec :` とすると
+in Clojure, you can get `3.14` with doing `ldb/get [:baz :qux]` with
+the library interface, or `get :baz:qux` with the network interface.
+And you will get
 
     {"foo": "Hello",
      "bar": "World",
      "baz": {"qux": 3.14}}
 
-が返ります. 保存命令を実行すると, `getrec :` した場合と同じ表現で
-conf.json ファイルが生成されます.
+when doing `getrec :` with the network interface.
+
+Execution of saving command saves the configuration into `conf.json`
+file (automatically created if it doesn't exist) in the same format
+as the return of `getrec :`.
 
 # 登録プログラム情報
 
