@@ -2,7 +2,8 @@
   (:refer-clojure :exclude (load get set add-classpath))
   (:import [java.util Date]
            [clojure.lang DynamicClassLoader])
-  (:require [cheshire.core :as json])
+  (:require [cheshire.core :as json]
+            [overtone.at-at :as at-at])
   (:use [clojure.java.io]
         [clojure.core.incubator :only [dissoc-in]]))
 
