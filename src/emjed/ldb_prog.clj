@@ -62,7 +62,8 @@
  `(let [{onss# :name-spaces mns# :main} (~p-name-kw @*prog*)
         nss# (if mns# (cons mns# onss#) onss#)]
     (doseq [name-space# nss#]
-      (require (symbol name-space#) :reload))))
+      (if name-space#
+        (require (symbol name-space#) :reload)))))
 
 ; for test
 (defmacro exec-fn [fqf args] ; note args is a list
