@@ -10,8 +10,15 @@
 ;; ----------------------------------------------------------------
 ;; general
 ;;
-(defmacro get-version []
-  (System/getProperty "emjed.version"))
+;(defmacro get-version []
+;  (System/getProperty "emjed.version"))
+(defn get-version []
+  (let [sdf (java.text.SimpleDateFormat. "yyyyMMddHHmmss")]
+    (->>
+      (clojure.java.io/resource "emjed/core__init.class")
+      (.openConnection)
+      (.getLastModified)
+      (.format sdf))))
 
 ;; ----------------------------------------------------------------
 ;; handling
@@ -114,13 +121,15 @@
 
 ; ----------------------------------------------------------------
 (defn- telnet-handler [in out]
+ (try
   (with-open [rdr (reader in) wtr (writer out)]
     (loop [line (bs-apply (.readLine rdr))]
       (if (= (apply str (take 5 line)) "close")
           nil
           (do (.write wtr (proc line rdr wtr))
               (.flush wtr)
-              (recur (bs-apply (.readLine rdr))))))))
+              (recur (bs-apply (.readLine rdr)))))))
+  (catch Exception e (.printStackTrace e))))
 
 ; ----------------------------------------------------------------
 (defn- decode-url-encoded [s]
@@ -213,6 +222,7 @@
     (.flush wtr)))
 
 (defn- http-handler [in out]
+ (try
   (with-open [rdr (reader in) wtr (writer out)]
     (loop [line (.readLine rdr) lines ""]
       (if (= line "")
@@ -237,7 +247,8 @@
                 :else (http-method-not-allowed wtr))
              (http-bad-request wtr)
           )
-          (recur (.readLine rdr) (str lines line "\r\n"))))))
+          (recur (.readLine rdr) (str lines line "\r\n")))))
+  (catch Exception e (.printStackTrace e))))
 
 ; ----------------------------------------------------------------
 
