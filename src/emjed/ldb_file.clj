@@ -1,5 +1,6 @@
 (in-ns 'emjed.ldb)
 
+;(eval-when-compile
 (defmacro get-cp [path]
  `(if (= (first ~path) \/) ~path (str @*dir* "/" @*file-dir* "/" ~path)))
 
@@ -29,3 +30,4 @@
 
 (defmacro frename [spath dpath]
  `(.renameTo (file (get-cp ~spath)) (file (get-cp ~dpath))))
+;)

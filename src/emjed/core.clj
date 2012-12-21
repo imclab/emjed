@@ -1,6 +1,7 @@
 (ns emjed.core
   (:gen-class)
-  (:use     [clojure.java.io]
+  (:use     [emjed.utils]
+            [clojure.java.io]
             [clojure.string :only [join split]]
             [server.socket])
   (:require [emjed.ldb :as ldb]
@@ -23,6 +24,7 @@
 ;; ----------------------------------------------------------------
 ;; handling
 
+;(eval-when-compile
 (defmacro jsonize [body]
  `(.replace
     (json/generate-string ~body {:pretty true})
@@ -32,6 +34,7 @@
  `(loop [c# ~s]
     (let [r# (join (split c# #"[^\u0008]\u0008"))]
       (if (= r# c#) r# (recur r#)))))
+;)
 
 (defn- proc [line rdr wtr]
   (str

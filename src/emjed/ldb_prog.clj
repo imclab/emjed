@@ -29,6 +29,8 @@
 (def ^:dynamic *runnings* (ref {}))
 (def tp (at-at/mk-pool))
 
+;(eval-when-compile
+
 (defmacro on-start []
   ; *prog* にロードされた後
   ; 自動実行するプログラムを実行する.
@@ -147,4 +149,4 @@
            (dissoc (assoc p# :pid pid# :state (stat# (:future p#)))
              :future :sj))
          @*runnings*)))
-
+;)

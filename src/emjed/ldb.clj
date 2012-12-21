@@ -4,7 +4,8 @@
            [clojure.lang DynamicClassLoader])
   (:require [cheshire.core :as json]
             [overtone.at-at :as at-at])
-  (:use [clojure.java.io]
+  (:use [emjed.utils]
+        [clojure.java.io]
         [clojure.core.incubator :only [dissoc-in]]))
 
 (def ^:dynamic *dir* (atom (.getCanonicalPath (file "."))))
@@ -20,6 +21,7 @@
 
 ;; ----------------------------------------------------------------
 ;; general
+;(eval-when-compile
 (defmacro qk2kv [qk]
  `(vec (map keyword (re-seq #"[^:]+" ~qk))))
 
@@ -41,6 +43,7 @@
       (pload p-name-kw#)
       (if (= exec# "AUTO")
           (exec p-name-kw#)))))
+;)
 
 ;; This is used to remove an URL in the classpath added with
 ;; p-add-classpath
@@ -60,10 +63,12 @@
                     (.addURL ccl url)
                     (println "Already")))))
 
+;(eval-when-compile
 (defmacro save []
  `(doseq [[m# f#] [[@*conf* @*conf-file*] [@*prog* @*prog-file*]]]
     (spit (str @*dir* "/" f#)
       (json/generate-string m# {:pretty true}))))
+;)
 
 (defn cd
   ([] (cd @*dir*))
