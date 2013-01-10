@@ -46,7 +46,7 @@
           ; escape
           (= (first line) \`)
             (try (->> (rest line) (apply str) (load-string) (str))
-                 (catch Exception e (.toString e)))
+                 (catch Throwable t (.toString t)))
           ; general
           (= cmd "version") (str "emjed-" (get-version))
           (= cmd "pwd")     (ldb/pwd)
@@ -119,7 +119,7 @@
           (= cmd "fdel")    (do (ldb/fdel (first args)) "OK")
           (= cmd "frename") (do (ldb/frename (first args) (second args)) "OK")
           :else (str cmd ": command not found."))
-        (catch Exception e (.toString e))))
+        (catch Throwable t (.toString t))))
     "\r\n"))
 
 ; ----------------------------------------------------------------
@@ -132,7 +132,7 @@
           (do (.write wtr (proc line rdr wtr))
               (.flush wtr)
               (recur (bs-apply (.readLine rdr)))))))
-  (catch Exception e (.printStackTrace e))))
+  (catch Throwable t (.printStackTrace t))))
 
 ; ----------------------------------------------------------------
 (defn- decode-url-encoded [s]
@@ -161,7 +161,7 @@
                                [(keyword s) v])))
        :params (decode-url-encoded params)
        })
-    (catch Exception e (.printStackTrace e) nil)))
+    (catch Throwable t (.printStackTrace t) nil)))
 
 (defn- http-method-not-allowed [wtr]
   (let [mes "<html><body><h1>405 Method Not Allowed</h1></body></html>"]
@@ -193,7 +193,8 @@
 (defn- http-proc-get [{path :path params :params} rdr wtr]
   (if (not= path "/")
       (let [ca (try (ldb/fget (apply str (rest path)))
-                    (catch Exception e nil))
+                    (catch Exception e nil)
+                    (catch Error e (do (.printStackTrace e) nil)))
             len (count ca)]
         (if (nil? ca)
             (http-not-found wtr)
@@ -251,7 +252,7 @@
              (http-bad-request wtr)
           )
           (recur (.readLine rdr) (str lines line "\r\n")))))
-  (catch Exception e (.printStackTrace e))))
+  (catch Throwable t (.printStackTrace t))))
 
 ; ----------------------------------------------------------------
 
