@@ -2,11 +2,12 @@
   (:refer-clojure :exclude (load get set add-classpath))
   (:import [java.util Date]
            [clojure.lang DynamicClassLoader])
-  (:require [cheshire.core :as json]
-            [overtone.at-at :as at-at])
-  (:use [emjed.utils]
-        [clojure.java.io]
-        [clojure.core.incubator :only [dissoc-in]]))
+  (:require [clojure.java.io :refer (file as-url input-stream output-stream
+                                     reader writer delete-file)]
+            [clojure.core.incubator :refer (dissoc-in)]
+            [cheshire.core :as json]
+            [overtone.at-at :as at-at]
+            [emjed.utils :as utils]))
 
 (def ^:dynamic *dir* (atom (.getCanonicalPath (file "."))))
 (def ^:dynamic *conf-file* (atom "conf.json"))

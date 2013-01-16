@@ -1,12 +1,13 @@
 (ns emjed.core
   (:gen-class)
-  (:use     [emjed.utils]
-            [clojure.java.io]
-            [clojure.string :only [join split]]
-            [server.socket])
-  (:require [emjed.ldb :as ldb]
+  (:require [server.socket :refer (create-server close-server)]
+            [clojure.java.io :refer (reader writer resource)]
+            [clojure.string :refer (join split)]
+            [clojure.tools.logging :as log]
             [cheshire.core :as json]
-            [clojure.tools.logging :as log]))
+            [emjed.ldb :as ldb]
+            [emjed.mutex :as mutex]
+            [emjed.utils :as utils]))
 
 ;; ----------------------------------------------------------------
 ;; general
@@ -16,7 +17,7 @@
 (defn get-version []
   (let [sdf (java.text.SimpleDateFormat. "yyyyMMddHHmmss")]
     (->>
-      (clojure.java.io/resource "emjed/core__init.class")
+      (resource "emjed/core__init.class")
       (.openConnection)
       (.getLastModified)
       (.format sdf))))
