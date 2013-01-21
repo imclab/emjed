@@ -3,13 +3,12 @@
 ;(eval-when-compile
 (defmacro get [kv]
  `(if-let [r# (get-in @*conf* ~kv)]
-    (if (map? r#) (keys r#) r#)
-    (throw (Exception. (str "No Such Node: " (kv2qk ~kv))))))
+    (if (map? r#) (keys r#) r#)))
       
 (defmacro getrec [kv]
  `(if-let [r# (get-in @*conf* ~kv)]
     r#
-    (throw (Exception. (str "No Such Node: " (kv2qk ~kv))))))
+    {}))
 
 ;; You can set the root as a plain value.
 ;; (set [] "hoge") -> "hoge"
