@@ -122,30 +122,31 @@ Execution of saving command saves the configuration into `conf.json`
 file (automatically created if it doesn't exist) in the same format
 as the return of `getrec :`.
 
-# 登録プログラム情報
+# The information of registered programs
 
-プログラムの情報を管理します.  
-プログラムは, 他のプログラムから利用されることのみを前提とする *ライブラリ*
-と, 単体のプログラムとして実行可能な *実行可能プログラム* の両方を指します.  
-プログラムの実態となるバイナリやソースコードは別途ファイルとして送受信
-します. **(要検討)**  
+It manages the information of programs. 
+The word "program" imply either a *library* which is used by an
+executable program or an *executable* which you can execute as a 
+standalone. 
+Files as entities of programs are transfered separately.
 
-プログラムの情報は
-* プログラムの名称
-* プログラムが実装する名前空間のリスト
-* 実行可能プログラムの場合, エントリポイント関数を実装する名前空間
-* 実行可能プログラムの場合, 起動時に自動実行するか, 手動実行するかの情報
-* 実行可能プログラムの場合, 実行タイミングの指定
+The informations for a program consists of
 
-から成ります.
+* a name of program
+* a list of name spaces which the program implements
+* if it's an executable, name space which implements an entry point
+* if it's an executable, if you want it to be executed automatically or
+you execute it manually
+* if it's an executable, a timing to execute
 
-# ファイル群
+# The files
 
-プログラムのソースコード, コンパイル済みバイナリ,
-プログラムからアクセスされるリソース.
-http インターフェイスで WEB ページとしてアクセスされる HTML ファイル.
-などを LDB 以下の files というディレクトリの下に自由に配置します.  
-ファイルの送信, 取得, 削除, ディレクトリや名称の変更などの操作が提供されます.
+Source code of programs, compiled binary,
+resources which is used by programs and html files accessed as web pages
+via the http interface are able to be deployed arbitral path under
+an ldb.
+Emjed supports the sending, receiving, deleteing, renaming the name and
+moving between directories of files.
 
 # Library Interface
 
@@ -166,23 +167,24 @@ in format of an absolute or a relative path in your OS's file system.
 Path arguments for commands begging with the letter 'f' are absolute
 paths with assumed the current directory of LDB as the root.
 
-## LDB 全般
+## LDB general
 
-命令 | 引数 | 内容
+command | arguments | meaning
 ---------|------------|-----
-`ldb/pwd` |             | 現在の LDB のカレントディレクトリを取得します.
-`ldb/cd`  | path        | 現在の LDB のカレントディレクトリを変更し, `conf.json` と `prog.json` の内容をメモリ上にロードします. path は稼動している OS に於いて正しい, 相対パスまたは絶対パスです.
-`ldb/load` | | LDB 以下の conf.json ファイルと prog.json ファイルの内容を, それぞれ, コンフィギュレーションおよび登録プログラム情報としてメモリ中に(再)ロードします.
-`ldb/save` | | メモリ中のコンフィギュレーションと登録プログラム情報を LDB 以下の conf.json ファイルと prog.json ファイルとして保存します.
-`ldb/export` | | conf.json, prog.json 及び files 以下のファイルを zip 圧縮して単一のファイルとして取得します. (未実装)
-`ldb/import` | | conf.json, prog.json 及び files 以下のファイルを格納した zip 圧縮された単一のファイルを送信しロードします. (未実装)
+`ldb/pwd` |             | get the current directory of LDB
+`ldb/cd`  | <i>path</i> | change the current directory of LDB and load `conf.json` and `prog.json` under the new directory.
+<i>path</i> is the valid relative or absolute path on target OS
+`ldb/load` | | (re)load `conf.json` and `prog.json` onto memory
+`ldb/save` | | save contents on memory to `conf.json` and `prog.json` files
+`ldb/export` | | get contents of `conf.json`, `prog.json` and files under `files` as a zipped file (not implemented yet)
+`ldb/import` | | send the zipped file consisting of `conf.json`, `prog json` and files under `files` to the target (not implemented yet)
 
-## 登録プログラム情報
+## The information of registered program
 
-命令 | 引数 | 内容
+command | arguments | meaning
 ---------|------------|-----
-`ldb/register` | name-kw map | プログラムを登録します. 実態となるファイルは別途転送済みとします. name-kw にプログラムの名称をキーワードとして与え, map は `:name-spaces` に名前空間を文字列表現したもののベクタを, `:main` に実行可能プログラムとして実行する場合にエントリポイントとなる名前空間を文字列表現したもの, `:execution` に自動実行させたいか手動実行したいかに応じて "AUTO" または "MANUAL" を, `:timing` に `"ONCE"`, `"LOOP"` または, 後ほど規定する文字列表現された周期実行の実行タイミングを記載した文字列を格納したマップです. `:main` に記載した名前空間は `:name-spaces` に記載する必要はありません. 従ってエントリポイントとなる名前空間一つだけからなる実行可能プログラムは, `:name-spaces` を省略できます. またライブラリの場合は, `:main` 及び `:timing` を省略できます.
-`ldb/pload`      | name-kw | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をロードします.
+`ldb/register` | <i>name-kw</i> <i>map</i> | register a program assumed that the file which is the entity of the program have been transfered.  Give the name of program as <i>name-kw</i>, <i>map</i> is a map includes a vector of name spaces the program as `:name-spaces`, a name space of an entry point of the program as a value of the key `:main`, a string "AUTO" or "MANUAL" as a value of the key `:execution` and a string "ONCE", "LOOP", "INTERVAL" as a value of the key `:execution`.  `:name-spaces` have not to include the name space which you specify in `:main`. (i.e. the information about the program which have only one entry point name space, have not to have `:name-spaces`. If the program is a library, it have not to have `:main` and `:timing`
+`ldb/pload`      | <i>name-kw</i> | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をロードします.
 `ldb/registered` |         | 登録されたプログラムの一覧をマップで返します.
 `ldb/unregister` | name-kw | 登録されたプログラムの名称をキーワードとして与え, 登録を削除します.
 `ldb/build`      | name-kw | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をコンパイルします.
