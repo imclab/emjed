@@ -169,29 +169,30 @@ paths with assumed the current directory of LDB as the root.
 
 ## LDB general
 
-command | arguments | meaning
----------|------------|-----
-`ldb/pwd` |             | get the current directory of LDB
-`ldb/cd`  | <i>path</i> | change the current directory of LDB and load `conf.json` and `prog.json` under the new directory.
+command      | arguments   | meaning
+-------------|-------------|-----
+`ldb/pwd`    | | gets the current directory of LDB
+`ldb/cd`     | <i>path</i> | changes the current directory of LDB and load `conf.json` and `prog.json` under the new directory.
 <i>path</i> is the valid relative or absolute path on target OS
-`ldb/load` | | (re)load `conf.json` and `prog.json` onto memory
-`ldb/save` | | save contents on memory to `conf.json` and `prog.json` files
-`ldb/export` | | get contents of `conf.json`, `prog.json` and files under `files` as a zipped file (not implemented yet)
-`ldb/import` | | send the zipped file consisting of `conf.json`, `prog json` and files under `files` to the target (not implemented yet)
+`ldb/load`   | | (re)loads `conf.json` and `prog.json` onto memory
+`ldb/save`   | | saves contents on memory to `conf.json` and `prog.json` files
+`ldb/export` | | gets contents of `conf.json`, `prog.json` and files under `files` as a zipped file (not implemented yet)
+`ldb/import` | | sends the zipped file consisting of `conf.json`, `prog json` and files under `files` to the target (not implemented yet)
 
 ## The information of registered program
 
-command | arguments | meaning
----------|------------|-----
-`ldb/register` | <i>name-kw</i> <i>map</i> | register a program assumed that the file which is the entity of the program have been transfered.  Give the name of program as <i>name-kw</i>, <i>map</i> is a map includes a vector of name spaces the program as `:name-spaces`, a name space of an entry point of the program as a value of the key `:main`, a string "AUTO" or "MANUAL" as a value of the key `:execution` and a string "ONCE", "LOOP", "INTERVAL" as a value of the key `:execution`.  `:name-spaces` have not to include the name space which you specify in `:main`. (i.e. the information about the program which have only one entry point name space, have not to have `:name-spaces`. If the program is a library, it have not to have `:main` and `:timing`
-`ldb/pload`      | <i>name-kw</i> | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をロードします.
-`ldb/registered` |         | 登録されたプログラムの一覧をマップで返します.
-`ldb/unregister` | name-kw | 登録されたプログラムの名称をキーワードとして与え, 登録を削除します.
-`ldb/build`      | name-kw | 登録されたプログラムの名称をキーワードとして与え, そのプログラムの登録に一覧された名前空間をコンパイルします.
-`ldb/exec-fn`    | fqf args ... | 名前空間で完全修飾された関数名を文字列として与え, 任意の型の任意の数の引数を指定して関数を実行します. デバッグ用です.
-`ldb/exec`       | name-kw | 登録されたプログラムの名称をキーワードとして与え,  `:main` に指定された名前空間の `-main` 関数を, `:timing` に指定された方法で実行します. 実行したプロセスの ID を返します. *プロセス* とは実行中のプログラムの実態を指す言葉で, 同じプログラムを複数同時に起動した場合別のプロセスとなります.
-`ldb/kill`       | pid     | プロセス ID を指定して実行中のプログラムを停止します.
-`ldb/ps`         |         | プロセス一覧をマップで返します. キーがプロセス ID, 値はプロセスの状態を格納するマップです.
+command          | arguments      | meaning
+-----------------|----------------|-----
+`ldb/register`   | <i>name-kw</i> <i>map</i> | registers a program assumed that the file which is the entity of the program have been transfered.  Give the name of program as <i>name-kw</i>, <i>map</i> is a map includes a vector of name spaces the program as `:name-spaces`, a name space of an entry point of the program as a value of the key `:main`, a string "AUTO" or "MANUAL" as a value of the key `:execution` and a string "ONCE", "LOOP", "INTERVAL" as a value of the key `:execution`.  `:name-spaces` have not to include the name space which you specify in `:main`. (i.e. the information about the program which have only one entry point name space, have not to have `:name-spaces`. If the program is a library, it have not to have `:main` and `:timing`
+`ldb/pload`      | <i>name-kw</i> | loads the namespaces which are specified in the registered program. Give the name of the program as <i>name-kw</i>.
+`ldb/registered` |                | returns informations of the registered programs as a map.
+`ldb/unregister` | <i>name-kw</i> | deletes the registration of the program specified by <i>name-kw</i>.
+`ldb/build`      | <i>name-kw</i> | compiles the namespaces specified in the registration of the program specified by <i>name-kw</i>.
+`ldb/exec-fn`    | <i>fqf</i> <i>args</i> ... | executes functions which is specified by a fully qualified function name as <i>fqf</i> with arbitrary number of given aruguments as <i>args</i>. This is only for debug.
+`ldb/exec`       | <i>name-kw</i> | executes the function `-main` which is specified as `:main` of information of a registered program with the timing specified as `:timing` of that and returns the ID of process.  "Process" is the word representing an entity of runnning program. 
+登録されたプログラムの名称をキーワードとして与え,  `:main` に指定された名前空間の `-main` 関数を, `:timing` に指定された方法で実行します. 実行したプロセスの ID を返します. *プロセス* とは実行中のプログラムの実態を指す言葉で, 同じプログラムを複数同時に起動した場合別のプロセスとなります.
+`ldb/kill`       | <i>pid</i>     | プロセス ID を指定して実行中のプログラムを停止します.
+`ldb/ps`         |                | プロセス一覧をマップで返します. キーがプロセス ID, 値はプロセスの状態を格納するマップです.
 
 ## コンフィギュレーション
 
