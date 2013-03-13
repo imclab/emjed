@@ -1,5 +1,6 @@
-(defproject emjed "0.4"
+(defproject org.clojars.kohyama/emjed "1.0.0"
   :description "A program which manages programs for embedded computers"
+  :url "https://github.com/kohyama/emjed"
   :dev-dependencies [[org.clojure/algo.monads "0.1.0"]]
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.clojure/core.incubator "0.1.2"]
