@@ -2,7 +2,8 @@
   (:refer-clojure :exclude (load get set add-classpath))
   (:import [java.util Date]
            [clojure.lang DynamicClassLoader])
-  (:require [clojure.java.io :refer (file as-url input-stream output-stream
+  (:require [clojure.tools.logging :refer :all]
+            [clojure.java.io :refer (file as-url input-stream output-stream
                                      reader writer delete-file)]
             [clojure.core.incubator :refer (dissoc-in)]
             [cheshire.core :as json]
@@ -49,20 +50,22 @@
 ;; This is used to remove an URL in the classpath added with
 ;; p-add-classpath
 (defn- init-classloader []
-  (let [ccl (.getContextClassLoader (Thread/currentThread))
-        dcl (DynamicClassLoader.
-              (if (instance? DynamicClassLoader ccl) (.getParent ccl) ccl))]
-    (.setContextClassLoader (Thread/currentThread) dcl)))
+  (let [ccl (.getContextClassLoader (Thread/currentThread))]
+    (if-not (instance? DynamicClassLoader ccl)
+            (.setContextClassLoader
+              (Thread/currentThread)
+              (DynamicClassLoader. ccl)))))
 
 (defn- add-classpath [path]
-  (let [cpath (.getCanonicalPath (file path))
-        ccl (.getContextClassLoader (Thread/currentThread))
-        url (as-url (str "file://" cpath "/"))]
+  (let [ccl (.getContextClassLoader (Thread/currentThread))]
     (if-not (instance? DynamicClassLoader ccl)
-            (println "Do p-init-classloader before using p-add-classpath")
-            (if-not (some #(.equals % url) (.getURLs ccl))
-                    (.addURL ccl url)
-                    (println "Already")))))
+            (fatal "Do init-classloader before using p-add-classpath")
+            (let [url (.toURL (.toURI (file path)))]
+              (if-not (some #(.equals ^java.net.URL % url)
+                             (.getURLs ^DynamicClassLoader ccl))
+                      (.addURL ^DynamicClassLoader ccl url)
+                      (warn "The URL " url " is already in the CLASSPATH.")
+                      )))))
 
 ;(eval-when-compile
 (defmacro save []
@@ -80,6 +83,9 @@
         (init-classloader)
         (add-classpath (str @*dir* "/src"))
         (add-classpath (str @*dir* "/classes"))
+        (trace
+          (map identity
+               (.getURLs (.getContextClassLoader (Thread/currentThread)))))
         (load)))
 
 ; TODO import
