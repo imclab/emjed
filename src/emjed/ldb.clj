@@ -7,8 +7,7 @@
                                      reader writer delete-file)]
             [clojure.core.incubator :refer (dissoc-in)]
             [cheshire.core :as json]
-            [overtone.at-at :as at-at]
-            [emjed.utils :as utils]))
+            [overtone.at-at :as at-at]))
 
 (def ^:dynamic *dir* (atom (.getCanonicalPath (file "."))))
 (def ^:dynamic *conf-file* (atom "conf.json"))
@@ -23,7 +22,6 @@
 
 ;; ----------------------------------------------------------------
 ;; general
-;(eval-when-compile
 (defmacro qk2kv [qk]
  `(vec (map keyword (re-seq #"[^:]+" ~qk))))
 
@@ -45,10 +43,9 @@
       (pload p-name-kw#)
       (if (= exec# "AUTO")
           (exec p-name-kw#)))))
-;)
 
 ;; This is used to remove an URL in the classpath added with
-;; p-add-classpath
+;; add-classpath
 (defn- init-classloader []
   (let [ccl (.getContextClassLoader (Thread/currentThread))]
     (if-not (instance? DynamicClassLoader ccl)
@@ -59,7 +56,7 @@
 (defn- add-classpath [path]
   (let [ccl (.getContextClassLoader (Thread/currentThread))]
     (if-not (instance? DynamicClassLoader ccl)
-            (fatal "Do init-classloader before using p-add-classpath")
+            (fatal "Do init-classloader before using add-classpath")
             (let [url (.toURL (.toURI (file path)))]
               (if-not (some #(.equals ^java.net.URL % url)
                              (.getURLs ^DynamicClassLoader ccl))
@@ -67,12 +64,10 @@
                       (warn "The URL " url " is already in the CLASSPATH.")
                       )))))
 
-;(eval-when-compile
 (defmacro save []
  `(doseq [[m# f#] [[@*conf* @*conf-file*] [@*prog* @*prog-file*]]]
     (spit (str @*dir* "/" f#)
       (json/generate-string m# {:pretty true}))))
-;)
 
 (defn cd
   ([] (cd @*dir*))
@@ -85,7 +80,8 @@
         (add-classpath (str @*dir* "/classes"))
         (trace
           (map identity
-               (.getURLs (.getContextClassLoader (Thread/currentThread)))))
+               (.getURLs ^DynamicClassLoader
+                         (.getContextClassLoader (Thread/currentThread)))))
         (load)))
 
 ; TODO import

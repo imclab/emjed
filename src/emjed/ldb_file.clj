@@ -1,15 +1,14 @@
 (in-ns 'emjed.ldb)
 
-;(eval-when-compile
 (defmacro get-cp [path]
  `(if (= (first ~path) \/) ~path (str @*dir* "/" @*file-dir* "/" ~path)))
 
 (defmacro flist []
  `(let [cp# (str @*dir* "/" @*file-dir*)]
     (->> ((fn l# [f#]
-            (if (.isDirectory f#)
-                (mapcat l# (.listFiles f#))
-                (list (.getPath f#))))
+            (if (.isDirectory ^java.io.File f#)
+                (mapcat l# (.listFiles ^java.io.File f#))
+                (list (.getPath ^java.io.File f#))))
           (file cp#))
       (map #(apply str (drop (inc (count cp#)) %))))))
 
@@ -30,4 +29,4 @@
 
 (defmacro frename [spath dpath]
  `(.renameTo (file (get-cp ~spath)) (file (get-cp ~dpath))))
-;)
+

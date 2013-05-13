@@ -29,13 +29,6 @@
 (def ^:dynamic *runnings* (ref {}))
 (def tp (at-at/mk-pool))
 
-;(eval-when-compile
-
-(defmacro on-start []
-  ; *prog* にロードされた後
-  ; 自動実行するプログラムを実行する.
-)
-
 (defmacro register [p-name-kw attr]
  `(swap! *prog* assoc ~p-name-kw ~attr))
 
@@ -120,10 +113,7 @@
               f# (resolve (symbol fqf#))]
           (add-running ~p-name-kw fqf#
             nil (at-at/every (* i# 60000) #(apply f# args#) tp)
-            args#))
-    )
-  )
-)
+            args#)))))
 
 (defmacro kill [pid]
  `(dosync
@@ -149,4 +139,4 @@
            (dissoc (assoc p# :pid pid# :state (stat# (:future p#)))
              :future :sj))
          @*runnings*)))
-;)
+

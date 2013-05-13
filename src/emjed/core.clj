@@ -6,26 +6,22 @@
             [clojure.tools.logging :as log]
             [cheshire.core :as json]
             [emjed.ldb :as ldb]
-            [emjed.mutex :as mutex]
-            [emjed.utils :as utils]))
+            [emjed.mutex :as mutex]))
 
 ;; ----------------------------------------------------------------
 ;; general
 ;;
-;(defmacro get-version []
-;  (System/getProperty "emjed.version"))
 (defn get-version []
   (let [sdf (java.text.SimpleDateFormat. "yyyyMMddHHmmss")]
     (->>
       (resource "emjed/core__init.class")
       (.openConnection)
       (.getLastModified)
-      (.format sdf))))
+      (#(.format sdf ^java.util.Date %)))))
 
 ;; ----------------------------------------------------------------
 ;; handling
 
-;(eval-when-compile
 (defmacro jsonize [body]
  `(.replace
     (json/generate-string ~body {:pretty true})
@@ -35,9 +31,9 @@
  `(loop [c# ~s]
     (let [r# (join (split c# #"[^\u0008]\u0008"))]
       (if (= r# c#) r# (recur r#)))))
-;)
 
-(defn- proc [line rdr wtr]
+(defn- ^java.lang.String proc
+  [line ^java.io.BufferedReader rdr ^java.io.BufferedWriter wtr]
   (str
     (let [splits (re-seq #"[^ \t\r\n]+" line)
           cmd  (first splits)
@@ -104,7 +100,7 @@
           (= cmd "fput")    (let [len (Integer/parseInt (second args))
                                   ca (char-array len)]
                               ; TODO loop with a timeout
-                              (.read ^chars rdr ca 0 len)
+                              (.read rdr ^chars ca 0 len)
                               (.readLine rdr)
                               (ldb/fput (first args) ca)
                               "OK")
@@ -126,7 +122,8 @@
 ; ----------------------------------------------------------------
 (defn- telnet-handler [in out]
  (try
-  (with-open [rdr (reader in) wtr (writer out)]
+  (with-open [^java.io.BufferedReader rdr (reader in)
+              ^java.io.BufferedWriter wtr (writer out)]
     (loop [line (bs-apply (.readLine rdr))]
       (if (= (apply str (take 5 line)) "close")
           nil
@@ -164,7 +161,7 @@
        })
     (catch Throwable t (.printStackTrace t) nil)))
 
-(defn- http-method-not-allowed [wtr]
+(defn- http-method-not-allowed [^java.io.BufferedWriter wtr]
   (let [mes "<html><body><h1>405 Method Not Allowed</h1></body></html>"]
     (.write wtr
       (str "HTTP/1.1 405 Method Not Allowed\r\n"
@@ -173,7 +170,7 @@
            mes "\r\n"))
     (.flush wtr)))
 
-(defn- http-bad-request [wtr]
+(defn- http-bad-request [^java.io.BufferedWriter wtr]
   (let [mes "<html><body><h1>400 Bad Request</h1></body></html>"]
     (.write wtr
       (str "HTTP/1.1 400 Bad Request\r\n"
@@ -182,7 +179,7 @@
            mes "\r\n"))
     (.flush wtr)))
 
-(defn- http-not-found [wtr]
+(defn- http-not-found [^java.io.BufferedWriter wtr]
   (let [mes "<html><body><h1>404 Not Found</h1></body></html>"]
     (.write wtr
       (str "HTTP/1.1 404 Not Found\r\n"
@@ -191,7 +188,10 @@
            mes "\r\n"))
     (.flush wtr)))
 
-(defn- http-proc-get [{path :path params :params} rdr wtr]
+(defn- http-proc-get
+  [{path :path params :params}
+   ^java.io.BufferedReader rdr
+   ^java.io.BufferedWriter wtr]
   (if (not= path "/")
       (let [ca (try (ldb/fget (apply str (rest path)))
                     (catch Exception e nil)
@@ -216,7 +216,8 @@
                mes))
         (.flush wtr))))
 
-(defn- http-proc-post [header body rdr wtr]
+(defn- http-proc-post
+  [header body ^java.io.BufferedReader rdr ^java.io.BufferedWriter wtr]
   (let [mes (proc body rdr wtr)]
     (.write wtr
       (str "HTTP/1.1 200 OK\r\n"
@@ -228,7 +229,8 @@
 
 (defn- http-handler [in out]
  (try
-  (with-open [rdr (reader in) wtr (writer out)]
+  (with-open [^java.io.BufferedReader rdr (reader in)
+              ^java.io.BufferedWriter wtr (writer out)]
     (loop [line (.readLine rdr) lines ""]
       (if (= line "")
           (if-let [header (http-header-parse (str lines))]

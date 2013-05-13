@@ -1,6 +1,5 @@
 (in-ns 'emjed.ldb)
 
-;(eval-when-compile
 (defmacro get [kv]
  `(if-let [r# (get-in @*conf* ~kv)]
     (if (map? r#) (keys r#) r#)))
@@ -44,4 +43,3 @@
        (catch ClassCastException cce#
          (throw (Exception. (str "Not A Holding Node: "))))))
 
-;)
