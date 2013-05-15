@@ -6,15 +6,15 @@
             [clojure.java.io :refer (file as-url input-stream output-stream
                                      reader writer delete-file)]
             [clojure.core.incubator :refer (dissoc-in)]
-            [cheshire.core :as json]
+            [clojure.data.json :as json]
             [overtone.at-at :as at-at]))
 
-(def ^:dynamic *dir* (atom (.getCanonicalPath (file "."))))
-(def ^:dynamic *conf-file* (atom "conf.json"))
-(def ^:dynamic *conf* (atom {}))
-(def ^:dynamic *prog-file* (atom "prog.json"))
-(def ^:dynamic *prog* (atom {}))
-(def ^:dynamic *file-dir* (atom "files"))
+(def dir (atom (.getCanonicalPath (file "."))))
+(def conf-file (atom "conf.json"))
+(def conf (atom {}))
+(def prog-file (atom "prog.json"))
+(def prog (atom {}))
+(def file-dir (atom "files"))
 
 (clojure.core/load "ldb_conf")
 (clojure.core/load "ldb_prog")
@@ -28,18 +28,18 @@
 (defmacro kv2qk [kv]
  `(apply str (cons \: (interpose \: (map name ~kv)))))
 
-(defmacro pwd [] `@*dir*)
+(defmacro pwd [] `@dir)
 
 (defmacro load []
  `(do
-    (doseq [[a# f#] [[*conf* @*conf-file*] [*prog* @*prog-file*]]]
+    (doseq [[a# f#] [[conf @conf-file] [prog @prog-file]]]
       (reset! a#
-        (json/parse-string
+        (json/read-str
           (try
-            (slurp (str @*dir* "/" f#))
+            (slurp (str @dir "/" f#))
             (catch java.io.FileNotFoundException fnfe# "{}"))
-          true))) ; do convert strings to keywords
-    (doseq [[p-name-kw# {exec# :execution}] @*prog*]
+          :key-fn keyword))) ; do convert strings to keywords
+    (doseq [[p-name-kw# {exec# :execution}] @prog]
       (pload p-name-kw#)
       (if (= exec# "AUTO")
           (exec p-name-kw#)))))
@@ -65,19 +65,19 @@
                       )))))
 
 (defmacro save []
- `(doseq [[m# f#] [[@*conf* @*conf-file*] [@*prog* @*prog-file*]]]
-    (spit (str @*dir* "/" f#)
-      (json/generate-string m# {:pretty true}))))
+ `(doseq [[m# f#] [[@conf @conf-file] [@prog @prog-file]]]
+    (spit (str @dir "/" f#)
+      (.replace (with-out-str (json/pprint m# )) "\n" "\r\n"))))
 
 (defn cd
-  ([] (cd @*dir*))
+  ([] (cd @dir))
   ([path]
     (do (if (= (first path) \/)
-            (reset! *dir* path)
-            (swap! *dir* #(.getCanonicalPath (file (str % "/" path))))))
+            (reset! dir path)
+            (swap! dir #(.getCanonicalPath (file (str % "/" path))))))
         (init-classloader)
-        (add-classpath (str @*dir* "/src"))
-        (add-classpath (str @*dir* "/classes"))
+        (add-classpath (str @dir "/src"))
+        (add-classpath (str @dir "/classes"))
         (trace
           (map identity
                (.getURLs ^DynamicClassLoader

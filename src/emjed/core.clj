@@ -2,9 +2,9 @@
   (:gen-class)
   (:require [server.socket :refer (create-server close-server)]
             [clojure.java.io :refer (reader writer resource)]
-            [clojure.string :refer (join split)]
-            [clojure.tools.logging :as log]
-            [cheshire.core :as json]
+            [clojure.string :as cs]
+            [clojure.tools.logging :refer :all]
+            [clojure.data.json :as json]
             [emjed.ldb :as ldb]
             [emjed.mutex :as mutex]))
 
@@ -23,13 +23,18 @@
 ;; handling
 
 (defmacro jsonize [body]
- `(.replace
-    (json/generate-string ~body {:pretty true})
-    "\n" "\r\n"))
+ `(json/write-str ~body))
+; For, now I gave prity-print, so that the code below is very slow...
+;`(cs/replace
+;   (with-out-str (json/pprint ~body) (flush))
+;   #"\n" "\r\n")
+
+(defmacro unjson [body]
+ `(json/read-str ~body :key-fn keyword))
 
 (defmacro bs-apply [s]
  `(loop [c# ~s]
-    (let [r# (join (split c# #"[^\u0008]\u0008"))]
+    (let [r# (cs/join (cs/split c# #"[^\u0008]\u0008"))]
       (if (= r# c#) r# (recur r#)))))
 
 (defn- ^java.lang.String proc
@@ -39,100 +44,94 @@
           cmd  (first splits)
           args (rest splits)]
       (try
-        (cond
-          ; escape
-          (= (first line) \`)
-            (try (->> (rest line) (apply str) (load-string) (str))
-                 (catch Throwable t (.toString t)))
-          ; general
-          (= cmd "version") (str "emjed-" (get-version))
-          (= cmd "pwd")     (ldb/pwd)
-          (= cmd "cd")      (do (ldb/cd (first args)) "OK")
-          (= cmd "load")    (do (ldb/load) "OK")
-          (= cmd "save")    (do (ldb/save) "OK")
-         ;(= cmd "export")
-         ;(= cmd "import")
-          ; libraries and programs
-          (= cmd "register")   (do
-          (println "[" (apply str (rest args)) "]")
-           (ldb/register (keyword (first args))
-                                      (json/parse-string
-                                        (apply str (rest args)) true))
-                                   "OK")
-          (= cmd "pload")      (do (ldb/pload (keyword (first args)))
-                                   "OK")
-          (= cmd "registered") (jsonize (ldb/registered))
-          (= cmd "unregister") (do (ldb/unregister (keyword (first args)))
-                                   "OK")
-          (= cmd "build")      (do (ldb/build (keyword (first args)))
-                                   "OK")
-          (= cmd "exec-fn")    (ldb/exec-fn (first args) (rest args))
-          (= cmd "exec")       (ldb/exec (keyword (first args)))
-          (= cmd "kill")       (do (ldb/kill
-                                     (Integer/parseInt (first args)))
-                                   "OK")
-          (= cmd "ps")         (jsonize (ldb/ps))
-          ; ldb conf
-          (= cmd "get")     (jsonize (ldb/get (ldb/qk2kv (first args))))
-          (= cmd "getrec")  (jsonize (ldb/getrec (ldb/qk2kv (first args))))
-          (= cmd "set")     (do (ldb/set
-                                  (ldb/qk2kv (first args))
-                                    (json/parse-string (second args) true))
-                                "OK")
-          (= cmd "del")     (do (ldb/del (ldb/qk2kv (first args))) "OK")
-          (= cmd "rename")  (do (ldb/rename (ldb/qk2kv (first args))
+        (if (= (first line) \`)
+            ; escape
+            (->> (rest line) (apply str) (load-string) (str))
+            (condp = cmd
+              ; general
+              "version"    (str "emjed-" (get-version))
+              "pwd"        (ldb/pwd)
+              "cd"         (do (ldb/cd (first args)) "OK")
+              "load"       (do (ldb/load) "OK")
+              "save"       (do (ldb/save) "OK")
+             ;"export"
+             ;"import"
+              ; libraries and programs
+              "register"   (do (warn "register: " (apply str (rest args)))
+                               ; trace
+                               (ldb/register (keyword (first args))
+                                             (unjson
+                                               (apply str (rest args))))
+                               "OK")
+              "pload"      (do (ldb/pload (keyword (first args))) "OK")
+              "registered" (jsonize (ldb/registered))
+              "unregister" (do (ldb/unregister (keyword (first args))) "OK")
+              "build"      (do (ldb/build (keyword (first args))) "OK")
+              "exec-fn"    (ldb/exec-fn (first args) (rest args))
+              "exec"       (ldb/exec (keyword (first args)))
+              "kill"       (do (ldb/kill (Integer/parseInt (first args)))
+                               "OK")
+              "ps"         (jsonize (ldb/ps))
+              ; ldb conf
+              "get"        (jsonize (ldb/get (ldb/qk2kv (first args))))
+              "getrec"     (jsonize (ldb/getrec (ldb/qk2kv (first args))))
+              "set"        (do (ldb/set (ldb/qk2kv (first args))
+                                        (unjson (second args)))
+                               "OK")
+              "del"        (do (ldb/del (ldb/qk2kv (first args))) "OK")
+              "rename"     (do (ldb/rename (ldb/qk2kv (first args))
                                             (ldb/qk2kv (second args)))
-                                "OK")
-          ; ldb file
-          (= cmd "flist")   (jsonize (ldb/flist))
-          (= cmd "fget")    (let [ca (ldb/fget (first args))
-                                  len (count ca)]
-                              (.write wtr (str len "\r\n"))
-                              (.flush wtr)
-                              (.write wtr ^chars ca 0 len)
-                              "")
-          (= cmd "ftget")   (apply str
-                              (interleave
-                                (re-seq #"[^\r\n]+"
-                                  (slurp (str (ldb/pwd) "/files/"
-                                    (first args))))
-                                (repeat "\r\n")))
-          (= cmd "fput")    (let [len (Integer/parseInt (second args))
-                                  ca (char-array len)]
-                              ; TODO loop with a timeout
-                              (.read rdr ^chars ca 0 len)
-                              (.readLine rdr)
-                              (ldb/fput (first args) ca)
-                              "OK")
-          (= cmd "ftput")   (let [fname (str (ldb/pwd) "/files/" (first args))
-                                  emark (second args)]
-                              (loop [line (.readLine rdr) lines ""]
-                                (if (or (= line emark)
-                                        (= (int (first line)) 0x04))
-                                    (spit fname lines)
-                                    (recur (.readLine rdr)
-                                           (str lines "\r\n" line))))
-                              "OK")
-          (= cmd "fdel")    (do (ldb/fdel (first args)) "OK")
-          (= cmd "frename") (do (ldb/frename (first args) (second args)) "OK")
-          :else (str cmd ": command not found."))
+                               "OK")
+              ; ldb file
+              "flist"      (jsonize (ldb/flist))
+              "fget"       (let [ca (ldb/fget (first args))
+                                 len (count ca)]
+                             (.write wtr (str len "\r\n"))
+                             (.flush wtr)
+                             (.write wtr ^chars ca 0 len)
+                             "")
+              "ftget"      (apply str
+                             (interleave
+                               (re-seq #"[^\r\n]+"
+                                 (slurp (str (ldb/pwd) "/files/"
+                                             (first args))))
+                               (repeat "\r\n")))
+              "fput"       (let [len (Integer/parseInt (second args))
+                                 ca (char-array len)]
+                             ; TODO loop with a timeout
+                             (.read rdr ^chars ca 0 len)
+                             (.readLine rdr)
+                             (ldb/fput (first args) ca)
+                             "OK")
+              "ftput"      (let [fname (str (ldb/pwd) "/files/" (first args))
+                                 emark (second args)]
+                             (loop [line (.readLine rdr) lines ""]
+                               (if (or (= line emark)
+                                       (= (int (first line)) 0x04))
+                                   (spit fname lines)
+                                   (recur (.readLine rdr)
+                                          (str lines "\r\n" line))))
+                             "OK")
+              "fdel"       (do (ldb/fdel (first args)) "OK")
+              "frename"    (do (ldb/frename (first args) (second args)) "OK")
+              (str cmd ": command not found.")))
         (catch Throwable t (.toString t))))
     "\r\n"))
 
-; ----------------------------------------------------------------
+;; ----------------------------------------------------------------
 (defn- telnet-handler [in out]
- (try
-  (with-open [^java.io.BufferedReader rdr (reader in)
-              ^java.io.BufferedWriter wtr (writer out)]
-    (loop [line (bs-apply (.readLine rdr))]
-      (if (= (apply str (take 5 line)) "close")
-          nil
-          (do (.write wtr (proc line rdr wtr))
-              (.flush wtr)
-              (recur (bs-apply (.readLine rdr)))))))
-  (catch Throwable t (.printStackTrace t))))
+  (try
+    (with-open [^java.io.BufferedReader rdr (reader in)
+                ^java.io.BufferedWriter wtr (writer out)]
+      (loop [line (bs-apply (.readLine rdr))]
+        (if (= (apply str (take 5 line)) "close")
+            nil
+            (do (.write wtr (proc line rdr wtr))
+                (.flush wtr)
+                (recur (bs-apply (.readLine rdr)))))))
+    (catch Throwable t (.printStackTrace t))))
 
-; ----------------------------------------------------------------
+;; ----------------------------------------------------------------
 (defn- decode-url-encoded [s]
   (apply str
     (loop [a [] [c & r] s]
@@ -145,7 +144,7 @@
 
 (defn- http-header-parse [lines]
   (try
-    (let [[firstline & headers]    (split lines #"\r\n")
+    (let [[firstline & headers]    (cs/split lines #"\r\n")
           [[_ method _ proto host _ port path _ params httpv]]
             (re-seq
   #"(\S+)\s+(([^:\s]+)://)?([^/:\s]*)(:([^/\s]*))?([^\?\s]+)(\?(\S+))?\s+(\S+)"
@@ -155,7 +154,7 @@
        :httpv httpv
        :headers (if (nil? headers) nil
                     (into {} (for [p headers
-                                   :let [[s v] (split p #": *")]]
+                                   :let [[s v] (cs/split p #": *")]]
                                [(keyword s) v])))
        :params (decode-url-encoded params)
        })
@@ -228,57 +227,54 @@
     (.flush wtr)))
 
 (defn- http-handler [in out]
- (try
-  (with-open [^java.io.BufferedReader rdr (reader in)
-              ^java.io.BufferedWriter wtr (writer out)]
-    (loop [line (.readLine rdr) lines ""]
-      (if (= line "")
-          (if-let [header (http-header-parse (str lines))]
-            (cond
-              (= (header :method) "GET")
-                (http-proc-get header rdr wtr)
-              (= (header :method) "POST")
-                (let [cl (Integer/parseInt
-                           (:Content-Length
-                             (:headers header)))
-                      buf (char-array cl)
-                      ; -> May be needed timeout
-                      body (loop [len 0]
-                             (let [n (.read rdr ^chars buf len (- cl len))]
-                               (if (< n 0) ""
-                                   (if (<= cl (+ len n))
-                                       (apply str (map char buf))
-                                       (recur (+ len n))))))]
-                   (http-proc-post header
-                     (decode-url-encoded body) rdr wtr))
-                :else (http-method-not-allowed wtr))
-             (http-bad-request wtr)
-          )
-          (recur (.readLine rdr) (str lines line "\r\n")))))
-  (catch Throwable t (.printStackTrace t))))
+  (try
+    (with-open [^java.io.BufferedReader rdr (reader in)
+                ^java.io.BufferedWriter wtr (writer out)]
+      (loop [line (.readLine rdr) lines ""]
+        (if (= line "")
+            (if-let [header (http-header-parse (str lines))]
+              (condp = (header :method)
+                "GET"  (http-proc-get header rdr wtr)
+                "POST" (let [cl (Integer/parseInt
+                                  (:Content-Length (:headers header)))
+                             buf (char-array cl)
+                             ; -> May be needed timeout
+                             body (loop [len 0]
+                                    (let [n (.read rdr ^chars buf
+                                                   len (- cl len))]
+                                      (if (< n 0) ""
+                                          (if (<= cl (+ len n))
+                                              (apply str (map char buf))
+                                              (recur (+ len n))))))]
+                         (http-proc-post header
+                           (decode-url-encoded body) rdr wtr))
+                (http-method-not-allowed wtr))
+              (http-bad-request wtr))
+            (recur (.readLine rdr) (str lines line "\r\n")))))
+    (catch Throwable t (.printStackTrace t))))
 
-; ----------------------------------------------------------------
+;; ----------------------------------------------------------------
 
-(def ^:dynamic *telnet-server* (atom nil))
-(def ^:dynamic *http-server* (atom nil))
+(def telnet-server (atom nil))
+(def http-server   (atom nil))
 
 (defn- start-telnet-server [port]
-  (reset! *telnet-server* (create-server port telnet-handler)))
+  (reset! telnet-server (create-server port telnet-handler)))
 
 (defn- stop-telnet-server []
-  (when-not (nil? @*telnet-server*)
-    (close-server @*telnet-server*)
-    (reset! *telnet-server* nil)))
+  (when-not (nil? @telnet-server)
+    (close-server @telnet-server)
+    (reset! telnet-server nil)))
 
 (defn- start-http-server [port]
-  (reset! *http-server* (create-server port http-handler)))
+  (reset! http-server (create-server port http-handler)))
 
 (defn- stop-http-server []
-  (when-not (nil? @*http-server*)
-    (close-server @*http-server*)
-    (reset! *http-server* nil)))
+  (when-not (nil? @http-server)
+    (close-server @http-server)
+    (reset! http-server nil)))
 
-; ----------------------------------------------------------------
+;; ----------------------------------------------------------------
 
 (defn -main [& args]
   (if-let [path (first args)]

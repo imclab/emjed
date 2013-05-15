@@ -26,26 +26,26 @@
 ; exec-fn arbitrary function
 ; exec program
 
-(def ^:dynamic *runnings* (ref {}))
+(def runnings (ref {}))
 (def tp (at-at/mk-pool))
 
 (defmacro register [p-name-kw attr]
- `(swap! *prog* assoc ~p-name-kw ~attr))
+ `(swap! prog assoc ~p-name-kw ~attr))
 
 (defmacro registered []
- `@*prog*)
+ `@prog)
 
 (defmacro unregister [p-name-kw]
- `(swap! *prog* dissoc ~p-name-kw))
+ `(swap! prog dissoc ~p-name-kw))
 
 (defmacro build [p-name-kw]
- `(let [f# (file (str @*dir* "/classes"))]
+ `(let [f# (file (str @dir "/classes"))]
     (if (and (.exists f#) (.isFile f#))
         "A Plain File named \"classes\" already exists"
         (do
           (if (not (.exists f#)) (.mkdir f#))
           (binding [*compile-path* (.getCanonicalPath f#)]
-            (let [prog-attr# (~p-name-kw @*prog*)
+            (let [prog-attr# (~p-name-kw @prog)
                   name-spaces# (:name-spaces prog-attr#)]
               (doseq [name-space# name-spaces#]
                 (compile (symbol name-space#)))
@@ -54,7 +54,7 @@
                     (compile (symbol main#))))))))))
 
 (defmacro pload [p-name-kw]
- `(let [{onss# :name-spaces mns# :main} (~p-name-kw @*prog*)
+ `(let [{onss# :name-spaces mns# :main} (~p-name-kw @prog)
         nss# (if mns# (cons mns# onss#) onss#)]
     (doseq [name-space# nss#]
       (if name-space#
@@ -68,14 +68,14 @@
 (defmacro add-running [p-name-kw fqf p-future p-sj args]
  `(dosync
     (let [pid# (first (drop-while
-                        (fn [c#] (some #(= c# %) (keys @*runnings*)))
+                        (fn [c#] (some #(= c# %) (keys @runnings)))
                         (range)))]
-      (alter *runnings* assoc pid# {:name (name ~p-name-kw)
-                                    :start-at (Date.)
-                                    :function ~fqf
-                                    :args ~args
-                                    :future ~p-future
-                                    :sj ~p-sj}) ; scheduled job
+      (alter runnings assoc pid# {:name (name ~p-name-kw)
+                                  :start-at (Date.)
+                                  :function ~fqf
+                                  :args ~args
+                                  :future ~p-future
+                                  :sj ~p-sj}) ; scheduled job
       pid#)))
 
 (defmacro create-loop [fqf]
@@ -92,7 +92,7 @@
 (defmacro exec [p-name-kw]
  `(let [{t# :timing i# :interval
          main-ns# :main args-str# :args :as attr#}
-          (~p-name-kw @*prog*)
+          (~p-name-kw @prog)
         args# (if (nil? args-str#) nil (re-seq #"[^ \t]+" args-str#)) ]
     (cond
       (nil? attr#) (str "Can't find program named: " (name ~p-name-kw))
@@ -117,15 +117,15 @@
 
 (defmacro kill [pid]
  `(dosync
-    (if-let [p# (@*runnings* ~pid)]
+    (if-let [p# (@runnings ~pid)]
       (if-let [f# (p# :future)]
         (do
-          (alter *runnings* dissoc ~pid)
+          (alter runnings dissoc ~pid)
           (if-not (future-cancel f#)
             (throw (Exception. (str "Can't Stop Process: " ~pid)))))
         (if-let [sj# (p# :sj)]
           (do
-            (alter *runnings* dissoc ~pid)
+            (alter runnings dissoc ~pid)
             (at-at/stop sj#))
           (throw (Exception. (str "No Such Process: " ~pid))))))))
 
@@ -138,5 +138,5 @@
     (map (fn [[pid# p#]]
            (dissoc (assoc p# :pid pid# :state (stat# (:future p#)))
              :future :sj))
-         @*runnings*)))
+         @runnings)))
 

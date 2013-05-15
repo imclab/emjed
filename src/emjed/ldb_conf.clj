@@ -1,11 +1,11 @@
 (in-ns 'emjed.ldb)
 
 (defmacro get [kv]
- `(if-let [r# (get-in @*conf* ~kv)]
+ `(if-let [r# (get-in @conf ~kv)]
     (if (map? r#) (keys r#) r#)))
       
 (defmacro getrec [kv]
- `(if-let [r# (get-in @*conf* ~kv)]
+ `(if-let [r# (get-in @conf ~kv)]
     r#
     {}))
 
@@ -19,8 +19,8 @@
 ;;    {:foo "world", ...} -> Not A Holding Node: :foo
 ;;    {...} -> {:foo {:bar "hell"}, ...}
 (defmacro set [kv v]
- `(if (empty? ~kv) (reset! *conf* ~v)
-      (try (swap! *conf* assoc-in ~kv ~v)
+ `(if (empty? ~kv) (reset! conf ~v)
+      (try (swap! conf assoc-in ~kv ~v)
            (catch ClassCastException cce#
              (throw (Exception. (str "Not A Holding Node: "
                                      (kv2qk (pop ~kv)))))))))
@@ -33,13 +33,13 @@
 ; -> {:buz "world"}
 ;
 (defmacro del [kv]
- `(try (swap! *conf* dissoc-in ~kv)
+ `(try (swap! conf dissoc-in ~kv)
        (catch ClassCastException cce#
          (throw (Exception. (str "Not A Holding Node: "
                                  (kv2qk (pop ~kv))))))))
 
 (defmacro rename [skv dkv]
- `(try (swap! *conf* #(assoc-in (dissoc-in % ~skv) ~dkv (get-in % ~skv)))
+ `(try (swap! conf #(assoc-in (dissoc-in % ~skv) ~dkv (get-in % ~skv)))
        (catch ClassCastException cce#
          (throw (Exception. (str "Not A Holding Node: "))))))
 
