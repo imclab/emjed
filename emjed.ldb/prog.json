@@ -1,11 +1,13 @@
-{ "lc": "Last Change: 2013/06/18 11:33:03.",
+{ "lc": "Last Change: 2013/06/18 16:09:59.",
   "foo" : {
     "main": "foo.core",
     "execution": "AUTO",
-    "timing": "LOOP"},
+    "timing": "LOOP",
+    "args": ["hello", 3.14]},
   "bar": {
     "main": "bar.core",
     "execution": "AUTO",
     "timing": "INTERVAL",
-    "interval": 1}
+    "interval": 1,
+    "args": ["arg1", 1.414]}
 }

@@ -14,7 +14,7 @@
 ;   interval    (integer [minute])
 ;   name-spaces (string)
 ;   main        (string)
-;   args        (string vector)
+;   args        (vector of string or number)
 ;
 ; unregister
 ; build
@@ -90,9 +90,8 @@
 
 (defmacro exec [p-name-kw]
  `(let [{t# :timing i# :interval
-         main-ns# :main args-str# :args :as attr#}
-          (~p-name-kw @prog)
-        args# (if (nil? args-str#) nil (re-seq #"[^ \t]+" args-str#)) ]
+         main-ns# :main args# :args :as attr#}
+          (~p-name-kw @prog)]
     (cond
       (nil? attr#) (str "Can't find program named: " (name ~p-name-kw))
       (= t# "ONCE")
