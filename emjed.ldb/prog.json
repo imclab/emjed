@@ -1,7 +1,11 @@
-{
+{ "lc": "Last Change: 2013/06/18 11:33:03.",
   "foo" : {
-    "name-spaces" : [ "foo.core" ],
-    "main" : "foo.core",
-    "timing" : "LOOP"
-  }
+    "main": "foo.core",
+    "execution": "AUTO",
+    "timing": "LOOP"},
+  "bar": {
+    "main": "bar.core",
+    "execution": "AUTO",
+    "timing": "INTERVAL",
+    "interval": 1}
 }

@@ -24,7 +24,7 @@
 
 (defmacro jsonize [body]
  `(json/write-str ~body))
-; For, now I gave prity-print, so that the code below is very slow...
+; For now, I gave up prity-print, so that the code below is very slow...
 ;`(cs/replace
 ;   (with-out-str (json/pprint ~body) (flush))
 ;   #"\n" "\r\n")
@@ -36,6 +36,19 @@
  `(loop [c# ~s]
     (let [r# (cs/join (cs/split c# #"[^\u0008]\u0008"))]
       (if (= r# c#) r# (recur r#)))))
+
+(defn date-to-string-in-map [m]
+  ((fn t [tm]
+     (reduce
+       (fn [a k]
+         (let [v (k a)]
+           (cond
+             (map? v) (assoc a k (t v))
+             (= (class v) java.util.Date) (assoc a k (.toString v))
+             :else a)))
+        tm
+        (keys tm)))
+   m))
 
 (defn- ^java.lang.String proc
   [line ^java.io.BufferedReader rdr ^java.io.BufferedWriter wtr]
@@ -71,7 +84,7 @@
               "exec"       (ldb/exec (keyword (first args)))
               "kill"       (do (ldb/kill (Integer/parseInt (first args)))
                                "OK")
-              "ps"         (jsonize (ldb/ps))
+              "ps"         (jsonize (map date-to-string-in-map (ldb/ps)))
               ; ldb conf
               "get"        (jsonize (ldb/get (ldb/qk2kv (first args))))
               "getrec"     (jsonize (ldb/getrec (ldb/qk2kv (first args))))

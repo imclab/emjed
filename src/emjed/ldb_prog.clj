@@ -65,7 +65,7 @@
  `(apply (resolve (symbol ~fqf)) ~args))
 
 ; internal interface
-(defmacro add-running [p-name-kw fqf p-future p-sj args]
+(defmacro add-running [p-name-kw fqf p-sj args]
  `(dosync
     (let [pid# (first (drop-while
                         (fn [c#] (some #(= c# %) (keys @runnings)))
@@ -74,7 +74,6 @@
                                   :start-at (Date.)
                                   :function ~fqf
                                   :args ~args
-                                  :future ~p-future
                                   :sj ~p-sj}) ; scheduled job
       pid#)))
 
@@ -100,43 +99,54 @@
         (let [fqf# (str main-ns# "/-main")
               f# (resolve (symbol fqf#))]
           (add-running ~p-name-kw fqf#
-            (future (apply f# args#)) nil
+            (future (apply f# args#))
             args#)) ; returns pid
       (= t# "LOOP")
         (let [fqf# (str main-ns# "/-main")
               f# (create-loop fqf#)]
           (add-running ~p-name-kw fqf#
-            (future (apply f# args#)) nil
+            (future (apply f# args#))
             args#)) ; returns pid
       (= t# "INTERVAL")
         (let [fqf# (str main-ns# "/-main")
               f# (resolve (symbol fqf#))]
           (add-running ~p-name-kw fqf#
-            nil (at-at/every (* i# 60000) #(apply f# args#) tp)
+            (at-at/every (* i# 60000) #(apply f# args#) tp
+                         :initial-delay (mod (- (at-at/now)) 60000))
             args#)))))
 
 (defmacro kill [pid]
  `(dosync
     (if-let [p# (@runnings ~pid)]
-      (if-let [f# (p# :future)]
-        (do
-          (alter runnings dissoc ~pid)
-          (if-not (future-cancel f#)
-            (throw (Exception. (str "Can't Stop Process: " ~pid)))))
-        (if-let [sj# (p# :sj)]
-          (do
-            (alter runnings dissoc ~pid)
-            (at-at/stop sj#))
-          (throw (Exception. (str "No Such Process: " ~pid))))))))
+      (if-let [sj# (p# :sj)]
+        (cond
+          (future? sj#)
+            (do
+              (alter runnings dissoc ~pid)
+              (if-not (future-cancel sj#)
+                (throw (Exception. (str "Can't Stop Process: " ~pid)))))
+          (= (class sj#) overtone.at_at.RecurringJob)
+            (do
+              (alter runnings dissoc ~pid)
+              (if-not (at-at/stop sj#)
+                (throw (Exception. (str "Can't Stop Process: " ~pid)))))))
+      (throw (Exception. (str "No Such Process: " ~pid))))))
 
 (defmacro ps []
- `(let [stat# #(cond
-                (not (future? %)) "?"
-                (future-cancelled? %) "Cancelled"
-                (future-done? %) "Done"
-                :else "Running")]
+ `(let [stat# #(if-let [sj# (:sj %)]
+                 (cond
+                   (future? sj#)
+                     (cond
+                       (not (future? %)) "Unknown status"
+                       (future-cancelled? %) "Cancelled"
+                       (future-done? %) "Done"
+                       :else "Running")
+                   (= (class sj#) overtone.at_at.RecurringJob)
+                     (if @(:scheduled? sj#)
+                         "Running"
+                         "Suspended")
+                   :else "Unknown type of process"))]
     (map (fn [[pid# p#]]
-           (dissoc (assoc p# :pid pid# :state (stat# (:future p#)))
-             :future :sj))
+           (dissoc (assoc p# :pid pid# :state (stat# p#)) :sj))
          @runnings)))
 
