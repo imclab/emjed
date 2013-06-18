@@ -1,8 +1,9 @@
-{ "lc": "Last Change: 2013/06/18 16:09:59.",
+{ "lc": "Last Change: 2013/06/18 16:22:09.",
   "foo" : {
     "main": "foo.core",
     "execution": "AUTO",
     "timing": "LOOP",
+    "delay": 3000,
     "args": ["hello", 3.14]},
   "bar": {
     "main": "bar.core",

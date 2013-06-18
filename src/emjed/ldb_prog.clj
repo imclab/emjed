@@ -11,7 +11,8 @@
 ;   execution AUTO | MANUAL
 ;   timing    LOOP | ONCE | ["****-**-** *** **:**:**", ]
 ;             INTERVAL
-;   interval    (integer [minute])
+;   delay       (integer [ms])     ; for timing LOOP
+;   interval    (integer [minute]) ; for timing INTERVAL
 ;   name-spaces (string)
 ;   main        (string)
 ;   args        (vector of string or number)
@@ -77,19 +78,19 @@
                                   :sj ~p-sj}) ; scheduled job
       pid#)))
 
-(defmacro create-loop [fqf]
+(defmacro create-loop [fqf d]
  `(fn [& args#]
     (loop []
       (when
         (not= :ie
           (try
             (apply (resolve (symbol ~fqf)) args#)
-            (Thread/sleep 1000)
+            (Thread/sleep ~d)
             (catch InterruptedException ie# :ie)))
         (recur)))))
 
 (defmacro exec [p-name-kw]
- `(let [{t# :timing i# :interval
+ `(let [{t# :timing i# :interval d# :delay
          main-ns# :main args# :args :as attr#}
           (~p-name-kw @prog)]
     (cond
@@ -102,7 +103,7 @@
             args#)) ; returns pid
       (= t# "LOOP")
         (let [fqf# (str main-ns# "/-main")
-              f# (create-loop fqf#)]
+              f# (create-loop fqf# (if d# d# 1000))]
           (add-running ~p-name-kw fqf#
             (future (apply f# args#))
             args#)) ; returns pid
