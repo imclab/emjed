@@ -6,6 +6,7 @@
             [clojure.java.io :refer (file as-url input-stream output-stream
                                      reader writer delete-file)]
             [clojure.core.incubator :refer (dissoc-in)]
+            [clojure.string :as string]
             [clojure.data.json :as json]
             [overtone.at-at :as at-at]))
 
@@ -30,13 +31,18 @@
 
 (defmacro pwd [] `@dir)
 
+(defn strip-comments [s]
+  (->> (string/split s #"(\r\n)|\r|\n")
+    (mapcat #(vector (string/replace % #"//.*$" "") "\n"))
+    (apply str)))
+
 (defmacro load []
  `(do
     (doseq [[a# f#] [[conf @conf-file] [prog @prog-file]]]
       (reset! a#
         (json/read-str
           (try
-            (slurp (str @dir "/" f#))
+            (strip-comments (slurp (str @dir "/" f#)))
             (catch java.io.FileNotFoundException fnfe# "{}"))
           :key-fn keyword))) ; do convert strings to keywords
     (doseq [[p-name-kw# {exec# :execution}] @prog]
